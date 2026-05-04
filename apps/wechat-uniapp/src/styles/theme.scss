@@ -38,6 +38,10 @@ button::after {
   border: 0;
 }
 
+button[disabled] {
+  opacity: 0.45;
+}
+
 textarea,
 input {
   color: $text-main;
@@ -45,6 +49,7 @@ input {
 }
 
 .page-shell {
+  height: 100vh;
   min-height: 100vh;
   background: $app-bg;
 }
@@ -52,15 +57,46 @@ input {
 .page-shell__frame {
   width: 100%;
   max-width: 448px;
+  height: 100vh;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-shell__stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-shell__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
 .page-shell__content {
-  padding: 64rpx 48rpx 180rpx;
+  padding: 40rpx 48rpx calc(180rpx + env(safe-area-inset-bottom));
 }
 
 .page-shell__content--no-tab {
-  padding-bottom: 96rpx;
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+}
+
+.page-shell__content--compact {
+  padding-top: 28rpx;
+}
+
+.page-shell__content--with-footer {
+  padding-bottom: 56rpx;
+}
+
+.page-shell__footer {
+  flex-shrink: 0;
+  padding: 20rpx 48rpx 0;
+  border-top: 1px solid rgba(24, 24, 27, 1);
+  background: rgba(0, 0, 0, 0.96);
 }
 
 .section-stack {
@@ -209,4 +245,10 @@ input {
 
 .safe-spacer {
   height: calc(env(safe-area-inset-bottom) + 12rpx);
+}
+
+.app-topbar-meta {
+  color: $text-muted;
+  font-size: 22rpx;
+  line-height: 1.4;
 }

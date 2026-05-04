@@ -1,189 +1,213 @@
 <template>
   <PageShell tab-key="records">
     <view class="records-page">
-      <text class="page-title">记录</text>
-
-      <view class="records-streak">
-        <view class="records-streak__label">
-          <view class="records-streak__icon">
-            <view class="records-streak__icon-core" />
+      <view class="records-hero">
+        <view class="records-hero__label">
+          <view class="records-hero__icon">
+            <view class="records-hero__icon-core" />
           </view>
-          <text class="records-streak__label-text">当前连续打卡</text>
+          <text class="records-hero__label-text">连续记录</text>
         </view>
 
-        <view class="records-streak__value-row">
-          <text class="records-streak__value">{{ summary.currentStreak }}</text>
-          <text class="records-streak__unit">天</text>
+        <view class="records-hero__value-row">
+          <text class="records-hero__value">{{ overallSummary.currentStreak }}</text>
+          <text class="records-hero__unit">天</text>
         </view>
 
-        <text class="records-streak__copy">{{ streakDescription }}</text>
+        <text class="records-hero__copy">{{ streakDescription }}</text>
       </view>
 
-      <view class="records-history">
-        <text class="records-history__label">身份一致性历史</text>
-
-        <view class="records-history__weekdays">
-          <text
-            v-for="weekday in weekdays"
-            :key="weekday"
-            class="records-history__weekday"
-          >
-            {{ weekday }}
-          </text>
-        </view>
-
-        <view class="records-history__grid">
-          <view
-            v-for="day in recordDays"
-            :key="day.dateKey"
-            class="records-history__cell"
-            :class="cellClass(day)"
-            @tap="handleSelectDate(day.dateKey)"
-          >
-            <text class="records-history__cell-label">{{ day.label }}</text>
+      <GlassCard card-class="records-card">
+        <view class="records-window">
+          <view class="records-window__copy">
+            <SectionLabel>时间窗口</SectionLabel>
+            <text class="records-window__title">{{ windowTitle }}</text>
+            <text class="muted-text">{{ windowRangeLabel }}</text>
+          </view>
+          <view class="records-window__actions">
+            <button
+              class="ghost-button records-window__button"
+              :disabled="!recordWindow.hasPrevWindow"
+              @tap="shiftWindow(-35)"
+            >
+              更早
+            </button>
+            <button
+              class="ghost-button records-window__button"
+              :disabled="!recordWindow.hasNextWindow"
+              @tap="shiftWindow(35)"
+            >
+              更新
+            </button>
           </view>
         </view>
 
-        <view class="records-history__legend">
-          <view class="records-history__legend-item">
-            <view class="records-history__legend-swatch records-history__legend-swatch--aligned" />
-            <text class="records-history__legend-text">一致</text>
+        <view class="records-metrics">
+          <view class="records-metric">
+            <text class="records-metric__value">{{ windowSummary.averageAlignment }}%</text>
+            <text class="records-metric__label">窗口平均分</text>
           </view>
-          <view class="records-history__legend-item">
-            <view class="records-history__legend-swatch records-history__legend-swatch--off" />
-            <text class="records-history__legend-text">偏离</text>
+          <view class="records-metric">
+            <text class="records-metric__value">{{ windowSummary.completedDays }}/{{ windowSummary.trackedDays }}</text>
+            <text class="records-metric__label">对齐天数</text>
+          </view>
+          <view class="records-metric">
+            <text class="records-metric__value">{{ overallSummary.bestStreak }}</text>
+            <text class="records-metric__label">最佳连续</text>
+          </view>
+        </view>
+      </GlassCard>
+
+      <GlassCard card-class="records-card">
+        <view class="records-section-head">
+          <view class="records-section-head__copy">
+            <SectionLabel>35 天热力格</SectionLabel>
+            <text class="records-section-head__title">点任意一天，查看评分、提醒处理与复盘</text>
           </view>
         </view>
 
-        <text class="records-history__hint">轻点任意一天，回看那天留下的真实记录。</text>
-      </view>
+        <HeatmapGrid
+          :days="recordWindow.days"
+          :active-date-key="activeHeatmapDate"
+          @select="openRecordDetail"
+        />
 
-      <view v-if="showDetail && selectedRecord" class="records-detail">
-        <view class="records-detail__head">
-          <view class="records-detail__copy">
-            <text class="records-detail__title">{{ detailDateLabel }}</text>
-            <text class="records-detail__subtitle">{{ detailHeadline }}</text>
+        <view class="records-legend">
+          <view class="records-legend__item">
+            <view class="records-legend__swatch records-legend__swatch--aligned" />
+            <text class="records-legend__text">稳定推进</text>
           </view>
-          <text class="records-detail__score">{{ selectedRecord.alignmentScore ?? "--" }}%</text>
+          <view class="records-legend__item">
+            <view class="records-legend__swatch records-legend__swatch--off" />
+            <text class="records-legend__text">偏离</text>
+          </view>
+          <view class="records-legend__item">
+            <view class="records-legend__dot" />
+            <text class="records-legend__text">已写夜间复盘</text>
+          </view>
         </view>
+      </GlassCard>
 
-        <view v-if="selectedRecord.alignmentScore !== null" class="records-detail__facts">
-          <text class="records-detail__fact">完成证明 {{ selectedRecord.completedProofCount }}</text>
-          <text class="records-detail__fact">夜间复盘{{ selectedRecord.hasNightReview ? "已完成" : "未完成" }}</text>
-        </view>
-
-        <text class="records-detail__note">{{ detailNote }}</text>
+      <view class="records-summary">
+        <SectionLabel>趋势摘要</SectionLabel>
+        <text class="records-summary__title">{{ trendHeadline }}</text>
+        <text class="muted-text">{{ trendBody }}</text>
+        <button class="ghost-button records-summary__button" @tap="openRecordDetail(todayDateKey)">
+          查看今天的完整记录
+        </button>
       </view>
     </view>
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import GlassCard from "@/components/GlassCard.vue";
+import HeatmapGrid from "@/components/HeatmapGrid.vue";
 import PageShell from "@/components/PageShell.vue";
+import SectionLabel from "@/components/SectionLabel.vue";
+import { parseDateKey } from "@/services/date";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
-const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
-const showDetail = ref(false);
 
-onShow(() => {
-  store.initialize();
-  showDetail.value = false;
-});
-
-const recordDays = computed(() => store.getRecordDays());
-const summary = computed(() => store.getRecordSummary());
-const selectedRecord = computed(() => store.selectedRecord.value);
-const selectedDateKey = computed(
-  () => selectedRecord.value?.dateKey ?? store.state.selectedRecordDateKey,
+const todayDateKey = computed(() => store.state.activeDateKey);
+const recordWindow = computed(() =>
+  store.getRecordWindow({
+    endDateKey: store.state.recordWindowEndDateKey,
+  }),
 );
-const onboardingCompleted = computed(() => store.state.data.onboardingCompleted);
-const trackedDays = computed(
-  () => recordDays.value.filter((day) => day.alignmentScore !== null).length,
+const overallSummary = computed(() =>
+  store.getRecordSummary({
+    endDateKey: todayDateKey.value,
+  }),
+);
+const windowSummary = computed(() =>
+  store.getRecordSummary({
+    endDateKey: recordWindow.value.endDateKey,
+    spanDays: recordWindow.value.spanDays,
+  }),
+);
+const activeHeatmapDate = computed(() =>
+  recordWindow.value.endDateKey === todayDateKey.value ? todayDateKey.value : "",
+);
+
+const windowTitle = computed(() =>
+  recordWindow.value.endDateKey === todayDateKey.value ? "当前 35 天" : "历史 35 天窗口",
+);
+const windowRangeLabel = computed(() =>
+  `${formatRangeDate(recordWindow.value.startDateKey)} - ${formatRangeDate(recordWindow.value.endDateKey)}`,
 );
 
 const streakDescription = computed(() => {
-  if (!onboardingCompleted.value) {
-    return "先完成初始化，这里会开始累计你的真实连续记录。";
+  if (!store.state.data.onboardingCompleted) {
+    return "先完成初始化，真实记录会从今天开始累积。";
   }
 
-  if (summary.value.currentStreak > 0) {
-    return "继续前进。你正在证明你是谁。";
+  if (overallSummary.value.currentStreak > 0) {
+    return "连续性正在形成，你留下的每一天都在抬高身份可信度。";
   }
 
-  if (trackedDays.value > 0) {
-    return "连续性可以重启，但每一天的真实记录都会留下。";
+  if (overallSummary.value.trackedDays > 0) {
+    return "轨迹没有丢，只是需要从今天重新把连续性拉起来。";
   }
 
-  return "今天开始留下第一条真实快照。";
+  return "先留下第一条快照，记录系统才会开始发力。";
 });
 
-const detailDateLabel = computed(() => formatDateLabel(selectedDateKey.value));
-
-const detailHeadline = computed(() => {
-  const record = selectedRecord.value;
-  if (!record || record.alignmentScore === null) {
-    return "这一天还没有留下快照。";
+const trendHeadline = computed(() => {
+  if (!windowSummary.value.trackedDays) {
+    return "这个窗口里还没有留下真实记录。";
   }
 
-  if (record.alignmentScore >= 80) {
-    return "状态很稳，继续按这个节奏推进。";
+  if (windowSummary.value.averageAlignment >= 80) {
+    return "这段时间整体推进很稳。";
   }
 
-  if (record.alignmentScore >= 60) {
-    return "整体在线，仍有一些可继续压实的空间。";
+  if (windowSummary.value.averageAlignment >= 60) {
+    return "这段时间整体在线，但还有一些松动。";
   }
 
-  return "这一天有些偏离，看看哪里最容易重新收紧。";
+  return "这段时间偏离比较明显，需要更主动地纠偏。";
 });
 
-const detailNote = computed(() => {
-  const note = selectedRecord.value?.note?.trim();
-  if (note) {
-    return note;
+const trendBody = computed(() => {
+  if (!windowSummary.value.trackedDays) {
+    return "开始使用今日页、提醒和夜间复盘后，这里会长出可翻看的真实轨迹。";
   }
 
-  if (selectedRecord.value?.alignmentScore === null) {
-    return "当日尚未完成记录或复盘，所以这里会保持空白。";
-  }
-
-  return "这一天没有补充文字观察，但快照本身已经计入真实记录。";
+  return `当前窗口里记录了 ${windowSummary.value.trackedDays} 天，其中 ${windowSummary.value.completedDays} 天达到 60 分以上；点开任意日期可以看当天评分、提醒处理和夜间复盘。`;
 });
 
-function handleSelectDate(dateKey: string) {
-  store.selectRecordDate(dateKey);
-  showDetail.value = true;
+function shiftWindow(offsetDays: number) {
+  store.shiftRecordWindow(offsetDays);
 }
 
-function cellClass(day: { alignmentScore: number | null; dateKey: string }) {
-  const isSelected = day.dateKey === selectedDateKey.value && showDetail.value;
-
-  return {
-    "records-history__cell--empty": day.alignmentScore === null,
-    "records-history__cell--off": day.alignmentScore !== null && day.alignmentScore < 60,
-    "records-history__cell--aligned": day.alignmentScore !== null && day.alignmentScore >= 60,
-    "records-history__cell--selected": isSelected,
-  };
+function openRecordDetail(dateKey: string) {
+  uni.navigateTo({
+    url: `/pages/record-detail/index?date=${dateKey}`,
+  });
 }
 
-function formatDateLabel(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  const weekdaysMap = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-  return `${month} 月 ${day} 日 · ${weekdaysMap[date.getDay()]}`;
+function formatRangeDate(dateKey: string) {
+  const date = parseDateKey(dateKey);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }
+
+onShow(() => {
+  store.initialize();
+});
 </script>
 
 <style scoped lang="scss">
 .records-page {
   display: flex;
   flex-direction: column;
-  gap: 44rpx;
+  gap: 34rpx;
 }
 
-.records-streak {
+.records-hero {
   display: flex;
   flex-direction: column;
   gap: 18rpx;
@@ -193,13 +217,13 @@ function formatDateLabel(dateKey: string) {
   background: linear-gradient(145deg, rgba(67, 20, 7, 0.58), rgba(24, 24, 27, 0.72));
 }
 
-.records-streak__label {
+.records-hero__label {
   display: flex;
   gap: 16rpx;
   align-items: center;
 }
 
-.records-streak__icon {
+.records-hero__icon {
   position: relative;
   display: flex;
   align-items: center;
@@ -210,7 +234,7 @@ function formatDateLabel(dateKey: string) {
   background: rgba(251, 146, 60, 0.12);
 }
 
-.records-streak__icon::before {
+.records-hero__icon::before {
   content: "";
   position: absolute;
   width: 24rpx;
@@ -220,7 +244,7 @@ function formatDateLabel(dateKey: string) {
   transform: rotate(-24deg) translateY(-2rpx);
 }
 
-.records-streak__icon-core {
+.records-hero__icon-core {
   position: absolute;
   width: 12rpx;
   height: 18rpx;
@@ -229,193 +253,149 @@ function formatDateLabel(dateKey: string) {
   transform: rotate(-20deg) translate(-2rpx, -2rpx);
 }
 
-.records-streak__label-text {
+.records-hero__label-text {
   color: #a1a1aa;
   font-size: 24rpx;
 }
 
-.records-streak__value-row {
+.records-hero__value-row {
   display: flex;
   gap: 12rpx;
   align-items: flex-end;
 }
 
-.records-streak__value {
+.records-hero__value {
   color: #fff7ed;
   font-size: 108rpx;
   line-height: 0.92;
   font-weight: 300;
 }
 
-.records-streak__unit {
+.records-hero__unit {
   margin-bottom: 10rpx;
   color: #71717a;
   font-size: 34rpx;
 }
 
-.records-streak__copy {
+.records-hero__copy {
   color: #d4d4d8;
   font-size: 24rpx;
   line-height: 1.6;
 }
 
-.records-history {
+.records-card {
   display: flex;
   flex-direction: column;
-}
-
-.records-history__label {
-  margin-bottom: 24rpx;
-  color: #71717a;
-  font-size: 20rpx;
-  letter-spacing: 4rpx;
-  text-transform: uppercase;
-}
-
-.records-history__weekdays,
-.records-history__grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12rpx;
-}
-
-.records-history__weekdays {
-  margin-bottom: 14rpx;
-}
-
-.records-history__weekday {
-  color: #52525b;
-  font-size: 20rpx;
-  text-align: center;
-}
-
-.records-history__cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
-  border: 1px solid rgba(39, 39, 42, 0.8);
-  border-radius: 18rpx;
-  background: rgba(24, 24, 27, 0.46);
-}
-
-.records-history__cell--aligned {
-  border-color: rgba(52, 211, 153, 0.16);
-  background: rgba(6, 95, 70, 0.28);
-}
-
-.records-history__cell--off {
-  border-color: rgba(82, 82, 91, 0.7);
-  background: rgba(39, 39, 42, 0.78);
-}
-
-.records-history__cell--selected {
-  border-color: rgba(228, 228, 231, 0.82);
-}
-
-.records-history__cell-label {
-  color: #71717a;
-  font-size: 22rpx;
-}
-
-.records-history__cell--aligned .records-history__cell-label,
-.records-history__cell--selected .records-history__cell-label {
-  color: #f4f4f5;
-}
-
-.records-history__legend {
-  display: flex;
   gap: 28rpx;
-  align-items: center;
-  justify-content: center;
-  margin-top: 28rpx;
 }
 
-.records-history__legend-item {
+.records-window,
+.records-section-head {
   display: flex;
-  gap: 10rpx;
-  align-items: center;
-}
-
-.records-history__legend-swatch {
-  width: 24rpx;
-  height: 24rpx;
-  border: 1px solid rgba(82, 82, 91, 0.72);
-  border-radius: 8rpx;
-  background: rgba(24, 24, 27, 0.46);
-}
-
-.records-history__legend-swatch--aligned {
-  border-color: rgba(52, 211, 153, 0.16);
-  background: rgba(6, 95, 70, 0.28);
-}
-
-.records-history__legend-swatch--off {
-  background: rgba(39, 39, 42, 0.78);
-}
-
-.records-history__legend-text,
-.records-history__hint {
-  color: #71717a;
-  font-size: 20rpx;
-}
-
-.records-history__hint {
-  margin-top: 18rpx;
-  text-align: center;
-}
-
-.records-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-  padding: 30rpx 32rpx;
-  border: 1px solid rgba(39, 39, 42, 0.72);
-  border-radius: 24rpx;
-  background: rgba(24, 24, 27, 0.3);
-}
-
-.records-detail__head {
-  display: flex;
-  gap: 18rpx;
+  gap: 20rpx;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.records-detail__copy {
+.records-window__copy,
+.records-section-head__copy {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 8rpx;
 }
 
-.records-detail__title {
+.records-window__title,
+.records-section-head__title,
+.records-summary__title {
   color: #f5f5f5;
-  font-size: 30rpx;
-  line-height: 1.3;
+  font-size: 34rpx;
+  line-height: 1.4;
 }
 
-.records-detail__subtitle,
-.records-detail__note {
-  color: #a1a1aa;
-  font-size: 24rpx;
-  line-height: 1.62;
-}
-
-.records-detail__score {
-  color: #f4f4f5;
-  font-size: 32rpx;
-  line-height: 1;
-}
-
-.records-detail__facts {
+.records-window__actions {
   display: flex;
-  gap: 18rpx;
+  gap: 14rpx;
+}
+
+.records-window__button,
+.records-summary__button {
+  align-self: flex-start;
+}
+
+.records-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14rpx;
+}
+
+.records-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 24rpx 20rpx;
+  border-radius: 20rpx;
+  background: rgba(10, 10, 11, 0.42);
+}
+
+.records-metric__value {
+  color: #f5f5f5;
+  font-size: 34rpx;
+  line-height: 1.1;
+}
+
+.records-metric__label {
+  color: #71717a;
+  font-size: 20rpx;
+  line-height: 1.5;
+}
+
+.records-legend {
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
   flex-wrap: wrap;
 }
 
-.records-detail__fact {
+.records-legend__item {
+  display: inline-flex;
+  gap: 10rpx;
+  align-items: center;
+}
+
+.records-legend__swatch {
+  width: 20rpx;
+  height: 20rpx;
+  border: 1px solid rgba(63, 63, 70, 0.72);
+  border-radius: 8rpx;
+  background: rgba(24, 24, 27, 0.68);
+}
+
+.records-legend__swatch--aligned {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(6, 95, 70, 0.34);
+}
+
+.records-legend__swatch--off {
+  border-color: rgba(82, 82, 91, 0.72);
+  background: rgba(39, 39, 42, 0.85);
+}
+
+.records-legend__dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: #34d399;
+  box-shadow: 0 0 16rpx rgba(52, 211, 153, 0.34);
+}
+
+.records-legend__text {
   color: #71717a;
-  font-size: 22rpx;
+  font-size: 20rpx;
+}
+
+.records-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
 }
 </style>

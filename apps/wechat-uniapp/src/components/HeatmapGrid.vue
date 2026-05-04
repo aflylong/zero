@@ -12,7 +12,11 @@
         @tap="$emit('select', day.dateKey)"
       >
         <text class="heatmap__label">{{ day.label }}</text>
-        <text v-if="day.alignmentScore !== null" class="heatmap__score">{{ day.alignmentScore }}</text>
+        <view
+          v-if="day.alignmentScore !== null"
+          class="heatmap__marker"
+          :class="{ 'heatmap__marker--reviewed': day.hasNightReview }"
+        />
       </button>
     </view>
   </view>
@@ -65,7 +69,7 @@ function cellClass(score: number | null, active: boolean) {
 .heatmap__cell {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 10rpx;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
@@ -93,8 +97,18 @@ function cellClass(score: number | null, active: boolean) {
   font-size: 22rpx;
 }
 
-.heatmap__score {
-  color: #f4f4f5;
-  font-size: 18rpx;
+.heatmap__marker {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: rgba(245, 245, 245, 0.8);
+  opacity: 0.78;
+}
+
+.heatmap__marker--reviewed {
+  width: 14rpx;
+  height: 14rpx;
+  background: #34d399;
+  box-shadow: 0 0 16rpx rgba(52, 211, 153, 0.34);
 }
 </style>

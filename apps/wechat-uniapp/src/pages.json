@@ -31,6 +31,12 @@
       }
     },
     {
+      "path": "pages/record-detail/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/identity/index",
       "style": {
         "navigationStyle": "custom"
@@ -50,6 +56,18 @@
     },
     {
       "path": "pages/night-review/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/today-note/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/reminder-settings/index",
       "style": {
         "navigationStyle": "custom"
       }

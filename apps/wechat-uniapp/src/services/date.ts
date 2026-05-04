@@ -37,6 +37,12 @@ export function formatWeekday(dateKey: string) {
   return ["日", "一", "二", "三", "四", "五", "六"][parseDateKey(dateKey).getDay()];
 }
 
+export function shiftDateKey(dateKey: string, offsetDays: number) {
+  const date = parseDateKey(dateKey);
+  date.setDate(date.getDate() + offsetDays);
+  return formatDateKey(date);
+}
+
 export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }

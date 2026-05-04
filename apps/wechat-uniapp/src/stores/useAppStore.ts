@@ -1,6 +1,16 @@
 import { computed, reactive, readonly } from "vue";
 import { articleSections } from "@/static/content/article";
-import { clamp, buildDateTime, formatDateKey, formatDayLabel, formatTimeLabel, formatWeekday, getLastDateKeys } from "@/services/date";
+import {
+  clamp,
+  buildDateTime,
+  formatDateKey,
+  formatDayLabel,
+  formatTimeLabel,
+  formatWeekday,
+  getLastDateKeys,
+  parseDateKey,
+  shiftDateKey,
+} from "@/services/date";
 import { readAppStorage, writeAppStorage } from "@/services/storage";
 import type {
   AppData,
@@ -9,9 +19,11 @@ import type {
   IdentityProfile,
   NightReview,
   OnboardingPayload,
+  RecordDetail,
   ProofRule,
   RecordDay,
   RecordSummary,
+  RecordWindow,
   ReminderAction,
   ReminderPrompt,
   ReminderRule,
@@ -221,7 +233,7 @@ const internalState = reactive({
   data: createDefaultAppData(),
   activeDateKey: formatDateKey(),
   pendingReminderPrompts: [] as ReminderPrompt[],
-  selectedRecordDateKey: formatDateKey(),
+  recordWindowEndDateKey: formatDateKey(),
 });
 
 function persist() {
@@ -252,6 +264,41 @@ function ensureDay(dateKey = internalState.activeDateKey) {
   return {
     plan: internalState.data.dailyPlans[dateKey],
     snapshot: internalState.data.dailySnapshots[dateKey],
+  };
+}
+
+function getTodayDateKey() {
+  return formatDateKey();
+}
+
+function clampRecordWindowEndDate(dateKey: string) {
+  const todayDateKey = getTodayDateKey();
+  return dateKey > todayDateKey ? todayDateKey : dateKey;
+}
+
+function getEarliestRecordDateKey() {
+  const keys = new Set<string>([
+    ...Object.keys(internalState.data.dailyPlans),
+    ...Object.keys(internalState.data.dailySnapshots),
+    ...Object.keys(internalState.data.nightReviews),
+    ...internalState.data.actionLogs.map((log) => log.dateKey),
+  ]);
+
+  return [...keys].sort()[0] ?? getTodayDateKey();
+}
+
+function buildRecordDay(dateKey: string): RecordDay {
+  const snapshot = internalState.data.dailySnapshots[dateKey];
+  const review = internalState.data.nightReviews[dateKey];
+
+  return {
+    dateKey,
+    label: formatDayLabel(dateKey),
+    weekday: formatWeekday(dateKey),
+    alignmentScore: snapshot?.alignmentScore ?? null,
+    completedProofCount: snapshot?.completedProofRuleIds.length ?? 0,
+    note: snapshot?.todayNote ?? "",
+    hasNightReview: Boolean(review),
   };
 }
 
@@ -320,11 +367,13 @@ function initialize() {
   if (internalState.ready) {
     ensureDay(internalState.activeDateKey);
     refreshReminderPrompts();
+    internalState.recordWindowEndDateKey = clampRecordWindowEndDate(internalState.recordWindowEndDateKey);
     return;
   }
 
   internalState.data = mergeWithDefaults(readAppStorage(createDefaultAppData()));
   internalState.activeDateKey = formatDateKey();
+  internalState.recordWindowEndDateKey = internalState.activeDateKey;
   ensureDay(internalState.activeDateKey);
   recalculateAlignment(internalState.activeDateKey);
   refreshReminderPrompts();
@@ -339,8 +388,12 @@ function resetSnooze(ruleId: string) {
   }
 }
 
-function selectRecordDate(dateKey: string) {
-  internalState.selectedRecordDateKey = dateKey;
+function setRecordWindowEndDate(dateKey: string) {
+  internalState.recordWindowEndDateKey = clampRecordWindowEndDate(dateKey);
+}
+
+function shiftRecordWindow(offsetDays: number) {
+  setRecordWindowEndDate(shiftDateKey(internalState.recordWindowEndDateKey, offsetDays));
 }
 
 function completeOnboarding(payload: OnboardingPayload) {
@@ -526,26 +579,40 @@ function openArticleSection(sectionId: string) {
   persist();
 }
 
-function getRecordDays() {
-  const keys = getLastDateKeys(35);
-  return keys.map<RecordDay>((dateKey) => {
-    const snapshot = internalState.data.dailySnapshots[dateKey];
-    const review = internalState.data.nightReviews[dateKey];
+function getRecordWindow(options?: {
+  endDateKey?: string;
+  spanDays?: number;
+}): RecordWindow {
+  const spanDays = options?.spanDays ?? 35;
+  const endDateKey = clampRecordWindowEndDate(
+    options?.endDateKey ?? internalState.recordWindowEndDateKey,
+  );
+  const keys = getLastDateKeys(spanDays, parseDateKey(endDateKey));
+  const days = keys.map((dateKey) => buildRecordDay(dateKey));
+  const earliestDateKey = getEarliestRecordDateKey();
 
-    return {
-      dateKey,
-      label: formatDayLabel(dateKey),
-      weekday: formatWeekday(dateKey),
-      alignmentScore: snapshot?.alignmentScore ?? null,
-      completedProofCount: snapshot?.completedProofRuleIds.length ?? 0,
-      note: snapshot?.todayNote ?? "",
-      hasNightReview: Boolean(review),
-    };
-  });
+  return {
+    startDateKey: keys[0] ?? endDateKey,
+    endDateKey,
+    spanDays,
+    days,
+    hasPrevWindow: (keys[0] ?? endDateKey) > earliestDateKey,
+    hasNextWindow: endDateKey < getTodayDateKey(),
+  };
 }
 
-function getRecordSummary(): RecordSummary {
-  const days = getRecordDays();
+function getRecordDays(options?: {
+  endDateKey?: string;
+  spanDays?: number;
+}) {
+  return getRecordWindow(options).days;
+}
+
+function getRecordSummary(options?: {
+  endDateKey?: string;
+  spanDays?: number;
+}): RecordSummary {
+  const days = getRecordDays(options);
   const scoredDays = days.filter((day) => day.alignmentScore !== null);
 
   let currentStreak = 0;
@@ -578,6 +645,57 @@ function getRecordSummary(): RecordSummary {
         )
       : 0,
     completedDays: scoredDays.filter((day) => (day.alignmentScore ?? 0) >= 60).length,
+    trackedDays: scoredDays.length,
+  };
+}
+
+function getPrevRecordDate(dateKey: string) {
+  const prevDateKey = shiftDateKey(dateKey, -1);
+  return prevDateKey < getEarliestRecordDateKey() ? null : prevDateKey;
+}
+
+function getNextRecordDate(dateKey: string) {
+  const nextDateKey = shiftDateKey(dateKey, 1);
+  return nextDateKey > getTodayDateKey() ? null : nextDateKey;
+}
+
+function getRecordDetail(dateKey: string): RecordDetail {
+  const snapshot = internalState.data.dailySnapshots[dateKey] ?? null;
+  const review = internalState.data.nightReviews[dateKey] ?? null;
+  const plan = internalState.data.dailyPlans[dateKey] ?? null;
+  const completedIds = snapshot?.completedProofRuleIds ?? [];
+  const reminderActions = [...(snapshot?.reminderActions ?? [])].sort((left, right) =>
+    left.actedAt > right.actedAt ? -1 : 1,
+  );
+  const actionLogs = internalState.data.actionLogs
+    .filter((log) => log.dateKey === dateKey)
+    .sort((left, right) => (left.createdAt > right.createdAt ? -1 : 1));
+
+  return {
+    dateKey,
+    label: formatDayLabel(dateKey),
+    weekday: formatWeekday(dateKey),
+    alignmentScore: snapshot?.alignmentScore ?? null,
+    completedProofCount: completedIds.length,
+    totalProofCount: activeProofRules().length,
+    todayNote: snapshot?.todayNote ?? "",
+    hasNightReview: Boolean(review),
+    reminderActions,
+    completedProofRuleTitles: completedIds
+      .map((ruleId) => internalState.data.proofRules.find((rule) => rule.id === ruleId)?.title ?? "")
+      .filter(Boolean),
+    mainQuestTitle: plan?.mainQuestTitle ?? internalState.data.visionProfile.mainQuestTitle,
+    mainQuestDescription:
+      plan?.mainQuestDescription ?? internalState.data.visionProfile.mainQuestDescription,
+    focusTheme: plan?.focusTheme ?? internalState.data.identityProfile.statement,
+    winsText: review?.winsText ?? "",
+    missesText: review?.missesText ?? "",
+    reflectionText: review?.reflectionText ?? "",
+    tomorrowFixesText: review?.tomorrowFixesText ?? "",
+    actionLogs,
+    lastUpdatedAt: review?.updatedAt ?? snapshot?.lastUpdatedAt ?? null,
+    prevDateKey: getPrevRecordDate(dateKey),
+    nextDateKey: getNextRecordDate(dateKey),
   };
 }
 
@@ -593,20 +711,21 @@ export function useAppStore() {
         (section) => section.id === internalState.data.articleProgress.currentSectionId,
       ) ?? articleSections[0],
   );
-  const selectedRecord = computed(
-    () => getRecordDays().find((day) => day.dateKey === internalState.selectedRecordDateKey) ?? null,
-  );
 
   return {
     state,
     today,
     currentArticleSection,
-    selectedRecord,
     activeProofRules,
+    getRecordWindow,
     getRecordDays,
     getRecordSummary,
+    getRecordDetail,
+    getPrevRecordDate,
+    getNextRecordDate,
     initialize,
-    selectRecordDate,
+    setRecordWindowEndDate,
+    shiftRecordWindow,
     refreshReminderPrompts,
     completeOnboarding,
     updateVisionProfile,

@@ -128,6 +128,40 @@ export interface RecordSummary {
   bestStreak: number;
   averageAlignment: number;
   completedDays: number;
+  trackedDays: number;
+}
+
+export interface RecordWindow {
+  startDateKey: string;
+  endDateKey: string;
+  spanDays: number;
+  days: RecordDay[];
+  hasPrevWindow: boolean;
+  hasNextWindow: boolean;
+}
+
+export interface RecordDetail {
+  dateKey: string;
+  label: string;
+  weekday: string;
+  alignmentScore: number | null;
+  completedProofCount: number;
+  totalProofCount: number;
+  todayNote: string;
+  hasNightReview: boolean;
+  reminderActions: ReminderActionRecord[];
+  completedProofRuleTitles: string[];
+  mainQuestTitle: string;
+  mainQuestDescription: string;
+  focusTheme: string;
+  winsText: string;
+  missesText: string;
+  reflectionText: string;
+  tomorrowFixesText: string;
+  actionLogs: ActionLog[];
+  lastUpdatedAt: string | null;
+  prevDateKey: string | null;
+  nextDateKey: string | null;
 }
 
 export interface AppData {
