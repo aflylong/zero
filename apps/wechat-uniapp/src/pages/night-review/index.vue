@@ -1,19 +1,30 @@
 <template>
-  <PageShell>
-    <view class="section-stack night-page">
-      <GradientHeroCard card-class="night-hero">
-        <view class="night-hero__top">
-          <button class="ghost-button" @tap="goBack">返回今日</button>
-          <text class="night-hero__date">{{ dateKey }}</text>
-        </view>
-        <SectionLabel>夜间复盘</SectionLabel>
-        <text class="page-title">把今天变成明天的燃料</text>
-        <text class="body-text">
-          写下赢点、偏离点和修正动作，让复盘真正影响明天，而不是只在脑子里打转。
-        </text>
-      </GradientHeroCard>
+  <PageShell
+    title="夜间复盘"
+    topbar-mode="secondary"
+    back-url="/pages/today/index"
+    :back-action="handleBack"
+  >
+    <view class="night-page">
+      <view class="night-hero">
+        <SectionLabel>{{ dateKey }}</SectionLabel>
+        <text class="night-hero__title">{{ currentStepMeta.title }}</text>
+        <text class="body-text">{{ currentStepMeta.description }}</text>
 
-      <GlassCard card-class="night-card">
+        <view class="night-steps">
+          <view
+            v-for="(item, index) in steps"
+            :key="item.short"
+            class="night-step"
+            :class="{ 'night-step--active': currentStep === index }"
+          >
+            <text class="night-step__index">0{{ index + 1 }}</text>
+            <text class="night-step__title">{{ item.short }}</text>
+          </view>
+        </view>
+      </view>
+
+      <GlassCard v-if="currentStep === 0" card-class="night-card">
         <SectionLabel>今日概况</SectionLabel>
         <view class="night-summary">
           <view class="night-summary__item">
@@ -22,89 +33,99 @@
           </view>
           <view class="night-summary__item">
             <text class="night-summary__value">{{ snapshot.alignmentScore }}%</text>
-            <text class="night-summary__label">系统计算对齐度</text>
+            <text class="night-summary__label">系统分数</text>
           </view>
         </view>
         <text class="muted-text">{{ observationPreview }}</text>
-      </GlassCard>
 
-      <GlassCard card-class="night-card">
-        <view class="night-card__header">
-          <view>
-            <SectionLabel>对齐评分</SectionLabel>
-            <text class="night-card__title">你主观上给今天打多少分</text>
+        <view class="night-score-block">
+          <view class="night-score-block__head">
+            <text class="night-score-block__title">你主观上给今天打多少分</text>
+            <text class="night-score">{{ form.alignmentScore }}</text>
           </view>
-          <text class="night-score">{{ form.alignmentScore }}</text>
+          <slider
+            class="night-slider"
+            :value="form.alignmentScore"
+            min="0"
+            max="100"
+            step="5"
+            activeColor="#34d399"
+            backgroundColor="rgba(63,63,70,0.8)"
+            block-color="#34d399"
+            @change="handleScoreChange"
+          />
+          <view class="night-score__marks">
+            <text>惯性</text>
+            <text>纠偏</text>
+            <text>对齐</text>
+            <text>推进</text>
+          </view>
         </view>
-        <slider
-          class="night-slider"
-          :value="form.alignmentScore"
-          min="0"
-          max="100"
-          step="5"
-          activeColor="#34d399"
-          backgroundColor="rgba(63,63,70,0.8)"
-          block-color="#34d399"
-          @change="handleScoreChange"
-        />
-        <view class="night-score__marks">
-          <text>惯性</text>
-          <text>纠偏</text>
-          <text>对齐</text>
-          <text>强势推进</text>
+      </GlassCard>
+
+      <GlassCard v-else-if="currentStep === 1" card-class="night-card">
+        <view class="field-block">
+          <SectionLabel>赢点</SectionLabel>
+          <textarea
+            class="textarea-shell night-textarea"
+            :value="form.winsText"
+            maxlength="500"
+            placeholder="今天哪几个动作最像你想成为的那个人？"
+            @input="handleTextInput('winsText', $event)"
+          />
+        </view>
+
+        <view class="field-block">
+          <SectionLabel>偏离点</SectionLabel>
+          <textarea
+            class="textarea-shell night-textarea"
+            :value="form.missesText"
+            maxlength="500"
+            placeholder="你在哪些时刻被惯性、分心或逃避带偏了？"
+            @input="handleTextInput('missesText', $event)"
+          />
         </view>
       </GlassCard>
 
-      <GlassCard card-class="night-card">
-        <SectionLabel>赢点</SectionLabel>
-        <textarea
-          class="textarea-shell night-textarea"
-          :value="form.winsText"
-          maxlength="500"
-          placeholder="今天哪几个动作最像你想成为的那个人？"
-          @input="handleTextInput('winsText', $event)"
-        />
-      </GlassCard>
-
-      <GlassCard card-class="night-card">
-        <SectionLabel>偏离点</SectionLabel>
-        <textarea
-          class="textarea-shell night-textarea"
-          :value="form.missesText"
-          maxlength="500"
-          placeholder="你在哪些时刻被惯性、分心或逃避带偏了？"
-          @input="handleTextInput('missesText', $event)"
-        />
-      </GlassCard>
-
-      <GlassCard card-class="night-card">
-        <SectionLabel>反思</SectionLabel>
-        <textarea
-          class="textarea-shell night-textarea"
-          :value="form.reflectionText"
-          maxlength="500"
-          placeholder="这些赢点和偏离点背后，真正的问题是什么？"
-          @input="handleTextInput('reflectionText', $event)"
-        />
-      </GlassCard>
-
-      <GlassCard card-class="night-card">
-        <SectionLabel>明日修正</SectionLabel>
-        <textarea
-          class="textarea-shell night-textarea"
-          :value="form.tomorrowFixesText"
-          maxlength="500"
-          placeholder="明天最小但最关键的修正动作是什么？"
-          @input="handleTextInput('tomorrowFixesText', $event)"
-        />
-        <view class="night-actions">
-          <text class="night-actions__status" :class="{ 'night-actions__status--dirty': dirty }">
-            {{ dirty ? "有未保存修改" : "内容已同步到本地存储" }}
-          </text>
-          <button class="pill-button" @tap="saveReview">保存复盘</button>
+      <GlassCard v-else card-class="night-card">
+        <view class="field-block">
+          <SectionLabel>反思</SectionLabel>
+          <textarea
+            class="textarea-shell night-textarea"
+            :value="form.reflectionText"
+            maxlength="500"
+            placeholder="这些赢点和偏离点背后，真正的问题是什么？"
+            @input="handleTextInput('reflectionText', $event)"
+          />
         </view>
+
+        <view class="field-block">
+          <SectionLabel>明日修正</SectionLabel>
+          <textarea
+            class="textarea-shell night-textarea"
+            :value="form.tomorrowFixesText"
+            maxlength="500"
+            placeholder="明天最小但最关键的修正动作是什么？"
+            @input="handleTextInput('tomorrowFixesText', $event)"
+          />
+        </view>
+
+        <text class="night-status" :class="{ 'night-status--dirty': dirty }">
+          {{ dirty ? "有未保存修改" : "表单已同步到当前草稿" }}
+        </text>
       </GlassCard>
     </view>
+
+    <template #footer>
+      <view class="night-footer">
+        <button class="ghost-button night-footer__button" @tap="handleSecondaryAction">
+          {{ currentStep === 0 ? "返回今日" : "上一步" }}
+        </button>
+        <button class="pill-button night-footer__button" @tap="handlePrimaryAction">
+          {{ currentStep === steps.length - 1 ? "保存复盘" : "下一步" }}
+        </button>
+      </view>
+    </template>
   </PageShell>
 </template>
 
@@ -112,7 +133,6 @@
 import { computed, reactive, ref, watch } from "vue";
 import { onHide, onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
-import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { useAppStore } from "@/stores/useAppStore";
@@ -124,7 +144,7 @@ type UniValueEvent = Event & {
 };
 
 const store = useAppStore();
-
+const currentStep = ref(0);
 const dirty = ref(false);
 const form = reactive({
   alignmentScore: 0,
@@ -134,6 +154,24 @@ const form = reactive({
   tomorrowFixesText: "",
 });
 
+const steps = [
+  {
+    short: "概况",
+    title: "先快速判断今天整体是否对齐。",
+    description: "先看系统快照，再给今天一个主观分数，别急着写很长的文字。",
+  },
+  {
+    short: "赢偏",
+    title: "把今天哪里做对了、哪里偏了说清楚。",
+    description: "只写真正发生过的动作与偏离，不写空洞评价。",
+  },
+  {
+    short: "修正",
+    title: "把反思压缩成明天能执行的修正动作。",
+    description: "复盘的价值不在于自责，而在于让明天更容易做对。",
+  },
+] as const;
+
 const dateKey = computed(() => store.state.activeDateKey);
 const snapshot = computed(() => store.today.value.snapshot);
 const completedProofCount = computed(() => snapshot.value.completedProofRuleIds.length);
@@ -142,6 +180,7 @@ const pendingNightPromptId = computed(
   () =>
     store.state.pendingReminderPrompts.find((prompt) => prompt.kind === "night")?.ruleId ?? null,
 );
+const currentStepMeta = computed(() => steps[currentStep.value] ?? steps[0]);
 const observationPreview = computed(() => {
   const note = snapshot.value.todayNote.trim();
   return note || "今天还没有写今日观察，先用这次复盘把真实情况补完整。";
@@ -172,11 +211,23 @@ function handleTextInput(
   dirty.value = true;
 }
 
-function saveReview(showToast = true) {
+function persistDraftIfDirty() {
   if (!dirty.value) {
     return;
   }
 
+  store.saveNightReview({
+    dateKey: dateKey.value,
+    alignmentScore: form.alignmentScore,
+    winsText: form.winsText,
+    missesText: form.missesText,
+    reflectionText: form.reflectionText,
+    tomorrowFixesText: form.tomorrowFixesText,
+  });
+  dirty.value = false;
+}
+
+function finalizeReview() {
   store.saveNightReview({
     dateKey: dateKey.value,
     alignmentScore: form.alignmentScore,
@@ -192,16 +243,36 @@ function saveReview(showToast = true) {
 
   dirty.value = false;
 
-  if (showToast) {
-    uni.showToast({
-      title: "复盘已保存",
-      icon: "success",
-    });
-  }
+  uni.showToast({
+    title: "复盘已保存",
+    icon: "success",
+  });
+
+  setTimeout(() => {
+    handleBack();
+  }, 180);
 }
 
-function goBack() {
-  saveReview(false);
+function handlePrimaryAction() {
+  if (currentStep.value < steps.length - 1) {
+    currentStep.value += 1;
+    return;
+  }
+
+  finalizeReview();
+}
+
+function handleSecondaryAction() {
+  if (currentStep.value === 0) {
+    handleBack();
+    return;
+  }
+
+  currentStep.value -= 1;
+}
+
+function handleBack() {
+  persistDraftIfDirty();
   if (getCurrentPages().length > 1) {
     uni.navigateBack();
     return;
@@ -211,6 +282,7 @@ function goBack() {
 }
 
 onShow(() => {
+  store.initialize();
   store.refreshReminderPrompts();
   if (!dirty.value) {
     hydrateForm();
@@ -218,33 +290,64 @@ onShow(() => {
 });
 
 onHide(() => {
-  saveReview(false);
+  persistDraftIfDirty();
 });
 </script>
 
 <style scoped lang="scss">
+.night-page,
+.night-hero,
+.night-card,
+.field-block {
+  display: flex;
+  flex-direction: column;
+}
+
 .night-page {
-  gap: 26rpx;
+  gap: 24rpx;
 }
 
 .night-hero,
-.night-card {
+.night-card,
+.field-block {
+  gap: 18rpx;
+}
+
+.night-hero__title,
+.night-score-block__title {
+  color: #f5f5f5;
+  font-size: 34rpx;
+  line-height: 1.42;
+}
+
+.night-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.night-step {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 8rpx;
+  padding: 18rpx 16rpx;
+  border: 1px solid rgba(39, 39, 42, 0.72);
+  border-radius: 18rpx;
+  background: rgba(24, 24, 27, 0.28);
 }
 
-.night-hero__top,
-.night-card__header,
-.night-actions {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-  justify-content: space-between;
+.night-step--active {
+  border-color: rgba(16, 185, 129, 0.24);
+  background: rgba(6, 95, 70, 0.18);
 }
 
-.night-hero__date {
-  color: rgba(209, 250, 229, 0.86);
+.night-step__index {
+  color: #71717a;
+  font-size: 18rpx;
+}
+
+.night-step__title {
+  color: #d4d4d8;
   font-size: 22rpx;
 }
 
@@ -269,16 +372,24 @@ onHide(() => {
   line-height: 1.1;
 }
 
-.night-summary__label {
+.night-summary__label,
+.night-status {
   color: #71717a;
   font-size: 22rpx;
 }
 
-.night-card__title {
-  display: block;
-  color: #f5f5f5;
-  font-size: 32rpx;
-  line-height: 1.4;
+.night-score-block {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.night-score-block__head,
+.night-footer {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .night-score {
@@ -299,19 +410,19 @@ onHide(() => {
 }
 
 .night-textarea {
-  min-height: 200rpx;
+  min-height: 220rpx;
 }
 
-.night-actions {
-  margin-top: 4rpx;
-}
-
-.night-actions__status {
-  color: #34d399;
-  font-size: 22rpx;
-}
-
-.night-actions__status--dirty {
+.night-status--dirty {
   color: #fb923c;
+}
+
+.night-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.night-footer__button {
+  justify-content: center;
 }
 </style>
