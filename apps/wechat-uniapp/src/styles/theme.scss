@@ -41,6 +41,7 @@ button::after {
 textarea,
 input {
   color: $text-main;
+  box-sizing: border-box;
 }
 
 .page-shell {

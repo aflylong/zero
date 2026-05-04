@@ -19,6 +19,12 @@
       }
     },
     {
+      "path": "pages/path-editor/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/records/index",
       "style": {
         "navigationStyle": "custom"
@@ -26,6 +32,12 @@
     },
     {
       "path": "pages/identity/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/identity-editor/index",
       "style": {
         "navigationStyle": "custom"
       }
@@ -45,8 +57,8 @@
   ],
   "globalStyle": {
     "navigationStyle": "custom",
-    "backgroundColor": "#030303",
-    "backgroundColorTop": "#030303",
+    "backgroundColor": "#000000",
+    "backgroundColorTop": "#000000",
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "Self Improvement"
   }

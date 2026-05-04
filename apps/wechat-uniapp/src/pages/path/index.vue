@@ -46,113 +46,27 @@
       </view>
 
       <view class="path-actions">
-        <button class="path-actions__link" @tap="showEditor = !showEditor">
-          {{ showEditor ? "收起编辑区" : "编辑道路" }}
-        </button>
+        <button class="path-actions__link" @tap="openPathEditor">调整愿景与主线</button>
         <button class="path-actions__link" @tap="openArticleReader">阅读原文</button>
         <button v-if="!store.state.data.onboardingCompleted" class="path-actions__link" @tap="openOnboarding">
-          初始化
+          完成初始化
         </button>
-      </view>
-
-      <view v-if="showEditor" class="glass-card path-editor">
-        <view class="path-editor__fields">
-          <view class="field-block">
-            <text class="field-label">愿景</text>
-            <textarea
-              v-model="visionText"
-              class="textarea-shell"
-              maxlength="300"
-              auto-height
-              placeholder="描述你想去到的生活、工作和关系状态。"
-            />
-          </view>
-
-          <view class="field-block">
-            <text class="field-label">反愿景</text>
-            <textarea
-              v-model="antiVisionText"
-              class="textarea-shell"
-              maxlength="240"
-              auto-height
-              placeholder="描述那个让你不愿回去的旧轨道。"
-            />
-          </view>
-
-          <view class="field-block">
-            <text class="field-label">为什么必须改变</text>
-            <textarea
-              v-model="whyChangeText"
-              class="textarea-shell"
-              maxlength="240"
-              auto-height
-              placeholder="把改变背后的理由写成你愿意兑现的承诺。"
-            />
-          </view>
-
-          <view class="field-block">
-            <text class="field-label">主线任务标题</text>
-            <input
-              v-model="mainQuestTitle"
-              class="input-shell"
-              maxlength="24"
-              placeholder="例如：7 天重塑系统"
-            />
-          </view>
-
-          <view class="field-block">
-            <text class="field-label">主线任务说明</text>
-            <textarea
-              v-model="mainQuestDescription"
-              class="textarea-shell"
-              maxlength="220"
-              auto-height
-              placeholder="说明这条主线会如何改变你接下来的一周。"
-            />
-          </view>
-        </view>
       </view>
     </view>
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
-const showEditor = ref(false);
-
-const visionText = computed({
-  get: () => store.state.data.visionProfile.visionText,
-  set: (value: string) => store.updateVisionProfile({ visionText: value }),
-});
-
-const antiVisionText = computed({
-  get: () => store.state.data.visionProfile.antiVisionText,
-  set: (value: string) => store.updateVisionProfile({ antiVisionText: value }),
-});
-
-const whyChangeText = computed({
-  get: () => store.state.data.visionProfile.whyChangeText,
-  set: (value: string) => store.updateVisionProfile({ whyChangeText: value }),
-});
-
-const mainQuestTitle = computed({
-  get: () => store.state.data.visionProfile.mainQuestTitle,
-  set: (value: string) => store.updateVisionProfile({ mainQuestTitle: value }),
-});
-
-const mainQuestDescription = computed({
-  get: () => store.state.data.visionProfile.mainQuestDescription,
-  set: (value: string) => store.updateVisionProfile({ mainQuestDescription: value }),
-});
 
 const visionPreview = computed(
   () =>
-    visionText.value.trim() ||
+    store.state.data.visionProfile.visionText.trim() ||
     "先把你真正想去的生活画面写清楚，这里会成为整个系统的远方。",
 );
 const identityStatement = computed(
@@ -163,6 +77,12 @@ const activeProofRules = computed(() => store.activeProofRules());
 function openArticleReader() {
   uni.navigateTo({
     url: "/pages/article-reader/index",
+  });
+}
+
+function openPathEditor() {
+  uni.navigateTo({
+    url: "/pages/path-editor/index",
   });
 }
 
@@ -301,24 +221,5 @@ function openOnboarding() {
 .path-actions__link {
   color: #71717a;
   font-size: 24rpx;
-}
-
-.path-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-}
-
-.path-editor__fields,
-.field-block {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.field-label {
-  color: #f4f4f5;
-  font-size: 24rpx;
-  line-height: 1.4;
 }
 </style>
