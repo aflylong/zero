@@ -143,10 +143,6 @@ const store = useAppStore();
 
 onShow(() => {
   store.initialize();
-  if (!store.state.data.onboardingCompleted) {
-    uni.reLaunch({ url: "/pages/onboarding/index" });
-    return;
-  }
   const currentId = store.state.data.articleProgress.currentSectionId;
   if (currentId) {
     store.openArticleSection(currentId);

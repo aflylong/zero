@@ -1,159 +1,109 @@
 <template>
   <PageShell tab-key="today">
-    <view class="section-stack today-page">
-      <GradientHeroCard card-class="today-hero">
-        <SectionLabel>今日身份</SectionLabel>
-        <text class="hero-title today-hero__title">{{ identityProfile.statement }}</text>
-        <text class="body-text today-hero__body">
-          {{ todayPlan.reminderHeadline }} 先做能证明这句话的动作，再决定今天值不值得满意。
-        </text>
-        <view class="today-hero__chips">
-          <view class="tag-chip tag-chip--active">
-            <text>{{ activeDateKey }}</text>
-          </view>
-          <view class="tag-chip">
-            <text>对齐度 {{ alignmentScore }}%</text>
-          </view>
-          <view class="tag-chip">
-            <text>证明 {{ completedProofCount }}/{{ proofRules.length }}</text>
-          </view>
-        </view>
-      </GradientHeroCard>
-
-      <GlassCard card-class="today-card">
-        <view class="today-card__header">
-          <view>
-            <SectionLabel>反身份</SectionLabel>
-            <text class="today-card__title">记住你拒绝回去的样子</text>
-          </view>
-          <button class="ghost-button" @tap="showAntiIdentity = !showAntiIdentity">
-            {{ showAntiIdentity ? "收起" : "展开" }}
-          </button>
-        </view>
-        <text class="muted-text">
-          {{ showAntiIdentity ? identityProfile.antiIdentityText : antiIdentityPreview }}
-        </text>
-      </GlassCard>
-
-      <view v-if="pendingPrompts.length" class="section-stack">
-        <view class="today-section-head">
-          <SectionLabel>提醒卡</SectionLabel>
-          <text class="today-section-head__meta">{{ pendingPrompts.length }} 条待处理</text>
-        </view>
-        <ReminderPrompt
-          v-for="prompt in pendingPrompts"
-          :key="prompt.ruleId"
-          :prompt="prompt"
-          @action="handleReminderAction"
-        />
+    <view class="today-page">
+      <view class="today-page__section">
+        <text class="section-label">你是</text>
+        <text class="hero-title today-page__identity">{{ identityProfile.statement }}</text>
       </view>
 
-      <GlassCard v-else card-class="today-card today-card--calm">
-        <SectionLabel>提醒卡</SectionLabel>
-        <text class="today-card__title">当前没有待处理提醒</text>
-        <text class="muted-text">继续按主线推进，下一次站内提醒到点后会自动出现。</text>
-      </GlassCard>
-
-      <GlassCard card-class="today-card">
-        <view class="today-card__header">
-          <view>
-            <SectionLabel>对齐度</SectionLabel>
-            <text class="today-card__title">{{ alignmentHeadline }}</text>
-          </view>
-          <button class="ghost-button" @tap="openNightReview">夜间复盘</button>
-        </view>
-        <view class="progress-track today-progress">
-          <view class="progress-bar" :style="{ width: `${alignmentScore}%` }" />
-        </view>
-        <view class="today-card__metrics">
-          <view class="today-metric">
-            <text class="today-metric__value">{{ alignmentScore }}%</text>
-            <text class="today-metric__label">当前对齐</text>
-          </view>
-          <view class="today-metric">
-            <text class="today-metric__value">{{ completedProofCount }}</text>
-            <text class="today-metric__label">已完成证明</text>
-          </view>
-          <view class="today-metric">
-            <text class="today-metric__value">{{ pendingPrompts.length }}</text>
-            <text class="today-metric__label">待回应提醒</text>
-          </view>
-        </view>
-      </GlassCard>
-
-      <GlassCard card-class="today-card">
-        <SectionLabel>主线任务</SectionLabel>
-        <text class="today-card__title">{{ todayPlan.mainQuestTitle }}</text>
-        <text class="body-text">{{ todayPlan.mainQuestDescription }}</text>
-        <view class="today-task">
-          <view class="today-task__line" />
-          <view class="today-task__copy">
-            <text class="today-task__focus">今日聚焦</text>
-            <text class="today-task__text">{{ todayPlan.focusTheme }}</text>
-          </view>
-        </view>
-      </GlassCard>
-
-      <view class="section-stack">
-        <view class="today-section-head">
-          <SectionLabel>每日证明</SectionLabel>
-          <text class="today-section-head__meta">{{ proofCompletionRate }}% 完成</text>
-        </view>
-        <button
-          v-for="rule in proofRules"
-          :key="rule.id"
-          class="today-proof"
-          :class="{ 'today-proof--done': completedProofRuleIds.includes(rule.id) }"
-          @tap="store.toggleProofCompletion(rule.id)"
-        >
-          <view class="today-proof__check">
-            <view
-              class="today-proof__dot"
-              :class="{ 'today-proof__dot--done': completedProofRuleIds.includes(rule.id) }"
-            />
-          </view>
-          <view class="today-proof__copy">
-            <text class="today-proof__title">{{ rule.title }}</text>
-            <text class="today-proof__description">{{ rule.description }}</text>
-          </view>
-        </button>
-      </view>
-
-      <GlassCard card-class="today-card">
-        <view class="today-card__header">
-          <view>
-            <SectionLabel>今日观察</SectionLabel>
-            <text class="today-card__title">记录真实发生了什么</text>
-          </view>
-          <text class="today-card__status" :class="{ 'today-card__status--dirty': noteDirty }">
-            {{ noteDirty ? "待保存" : "已同步" }}
+      <view class="today-page__section">
+        <view class="today-collapse" @tap="showAntiIdentity = !showAntiIdentity">
+          <text class="today-collapse__label">你正在抛弃的旧自己</text>
+          <text class="today-collapse__chevron" :class="{ 'today-collapse__chevron--open': showAntiIdentity }">
+            ⌄
           </text>
         </view>
+        <view v-if="showAntiIdentity" class="today-collapsed">
+          <text class="today-collapsed__text">{{ identityProfile.antiIdentityText }}</text>
+        </view>
+      </view>
+
+      <view class="today-page__section">
+        <text class="today-section-title">身份证明</text>
+        <view class="today-proof-list">
+          <view
+            v-for="rule in proofRules"
+            :key="rule.id"
+            class="today-proof"
+            @tap="store.toggleProofCompletion(rule.id)"
+          >
+            <view class="today-proof__icon" :class="{ 'today-proof__icon--done': completedProofRuleIds.includes(rule.id) }">
+              <text v-if="completedProofRuleIds.includes(rule.id)" class="today-proof__check">✓</text>
+            </view>
+            <text
+              class="today-proof__text"
+              :class="{ 'today-proof__text--done': completedProofRuleIds.includes(rule.id) }"
+            >
+              {{ rule.title }}
+            </text>
+          </view>
+        </view>
+      </view>
+
+      <view class="today-page__section">
+        <view class="today-alignment__top">
+          <text class="today-alignment__label">身份一致性</text>
+          <text class="today-alignment__value">{{ alignmentScore }}%</text>
+        </view>
+        <text class="today-alignment__hint">{{ alignmentHint }}</text>
+        <view class="progress-track">
+          <view class="progress-bar" :style="{ width: `${alignmentScore}%` }" />
+        </view>
+      </view>
+
+      <view class="today-page__section">
+        <text class="today-reflection__prompt">今天的你，像那个人吗？</text>
         <textarea
-          class="textarea-shell today-note"
-          :value="noteDraft"
+          class="textarea-shell today-reflection__input"
+          :value="todaySnapshot.todayNote"
           maxlength="300"
-          placeholder="写下你今天最明显的拉扯、分心、推进或意外收获。"
+          placeholder="对自己诚实..."
           @input="handleNoteInput"
         />
-        <view class="today-note__footer">
-          <text class="muted-text">这些观察会直接影响你晚上的复盘质量。</text>
-          <button class="pill-button" @tap="saveNote">保存观察</button>
+      </view>
+
+      <view class="today-utility">
+        <view class="today-utility__links">
+          <button class="today-utility__link" @tap="openNightReview">夜间复盘</button>
+          <button v-if="!store.state.data.onboardingCompleted" class="today-utility__link" @tap="openOnboarding">
+            初始化
+          </button>
         </view>
-      </GlassCard>
+
+        <view v-if="pendingPrompts.length" class="today-utility__reminders">
+          <view
+            v-for="prompt in pendingPrompts"
+            :key="prompt.ruleId"
+            class="today-reminder"
+          >
+            <view class="today-reminder__top">
+              <text class="today-reminder__type">{{ prompt.kind === "night" ? "夜间提醒" : "白天提醒" }}</text>
+              <text class="today-reminder__time">{{ prompt.dueAtLabel }}</text>
+            </view>
+            <text class="today-reminder__title">{{ prompt.label }}</text>
+            <text class="today-reminder__message">{{ prompt.message }}</text>
+            <view class="today-reminder__actions">
+              <button class="pill-button today-reminder__button" @tap="handleReminderAction(prompt.ruleId, 'complete')">
+                完成
+              </button>
+              <button class="ghost-button today-reminder__button" @tap="handleReminderAction(prompt.ruleId, 'snooze')">
+                稍后
+              </button>
+              <button class="ghost-button today-reminder__button" @tap="handleReminderAction(prompt.ruleId, 'skip')">
+                跳过
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { onHide, onShow } from "@dcloudio/uni-app";
-import GlassCard from "@/components/GlassCard.vue";
-import GradientHeroCard from "@/components/GradientHeroCard.vue";
+import { computed, ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import PageShell from "@/components/PageShell.vue";
-import ReminderPrompt from "@/components/ReminderPrompt.vue";
-import SectionLabel from "@/components/SectionLabel.vue";
-import { formatWeekday } from "@/services/date";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderAction } from "@/types/app";
 
@@ -164,79 +114,24 @@ type UniValueEvent = Event & {
 };
 
 const store = useAppStore();
-
 const showAntiIdentity = ref(false);
-const noteDraft = ref("");
-const noteDirty = ref(false);
 
 const identityProfile = computed(() => store.state.data.identityProfile);
-const activeDateKey = computed(
-  () => `${store.state.activeDateKey} · 星期${formatWeekday(store.state.activeDateKey)}`,
-);
-const todayPlan = computed(() => store.today.value.plan);
 const todaySnapshot = computed(() => store.today.value.snapshot);
 const proofRules = computed(() => store.activeProofRules());
 const pendingPrompts = computed(() => store.state.pendingReminderPrompts);
 const completedProofRuleIds = computed(() => todaySnapshot.value.completedProofRuleIds);
-const completedProofCount = computed(() => completedProofRuleIds.value.length);
 const alignmentScore = computed(() => todaySnapshot.value.alignmentScore);
-const proofCompletionRate = computed(() => {
-  if (!proofRules.value.length) {
-    return 100;
+const alignmentHint = computed(() => {
+  if (proofRules.value.length) {
+    return `${completedProofRuleIds.value.length}/${proofRules.value.length} 条证明已完成`;
   }
 
-  return Math.round((completedProofCount.value / proofRules.value.length) * 100);
+  return "先在身份页写下一条真正会执行的证明法则。";
 });
-const antiIdentityPreview = computed(() => {
-  const text = identityProfile.value.antiIdentityText.trim();
-  if (text.length <= 38) {
-    return text;
-  }
-  return `${text.slice(0, 38)}...`;
-});
-const alignmentHeadline = computed(() => {
-  const score = alignmentScore.value;
-  if (score >= 85) {
-    return "今天的行动正在替你说话";
-  }
-  if (score >= 60) {
-    return "方向是对的，现在把动作补满";
-  }
-  if (score >= 35) {
-    return "还有明显偏航，及时拉回主线";
-  }
-  return "今天仍然处在惯性里，先做最小修正";
-});
-
-watch(
-  () => todaySnapshot.value.todayNote,
-  (value) => {
-    if (!noteDirty.value) {
-      noteDraft.value = value;
-    }
-  },
-  { immediate: true },
-);
 
 function handleNoteInput(event: UniValueEvent) {
-  noteDraft.value = String(event.detail?.value ?? "");
-  noteDirty.value = noteDraft.value !== todaySnapshot.value.todayNote;
-}
-
-function saveNote(showToast = true) {
-  if (!noteDirty.value) {
-    return;
-  }
-
-  store.updateTodayNote(noteDraft.value);
-  noteDirty.value = false;
-
-  if (showToast) {
-    uni.showToast({
-      title: "观察已保存",
-      icon: "success",
-    });
-  }
+  store.updateTodayNote(String(event.detail?.value ?? ""));
 }
 
 function handleReminderAction(ruleId: string, action: ReminderAction) {
@@ -248,212 +143,238 @@ function handleReminderAction(ruleId: string, action: ReminderAction) {
   }
 }
 
+function openOnboarding() {
+  uni.navigateTo({ url: "/pages/onboarding/index" });
+}
+
 function openNightReview() {
-  saveNote(false);
   uni.navigateTo({ url: "/pages/night-review/index" });
 }
 
 onShow(() => {
-  if (!store.state.data.onboardingCompleted) {
-    uni.reLaunch({ url: "/pages/onboarding/index" });
-    return;
-  }
-
+  store.initialize();
   store.refreshReminderPrompts();
-});
-
-onHide(() => {
-  saveNote(false);
 });
 </script>
 
 <style scoped lang="scss">
 .today-page {
-  gap: 26rpx;
-}
-
-.today-hero {
-  gap: 24rpx;
-}
-
-.today-hero__title {
-  display: block;
-}
-
-.today-hero__body {
-  display: block;
-  max-width: 620rpx;
-}
-
-.today-hero__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.today-card {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 52rpx;
 }
 
-.today-card--calm {
-  background: linear-gradient(145deg, rgba(17, 24, 39, 0.82), rgba(6, 95, 70, 0.14));
-}
-
-.today-card__header,
-.today-section-head,
-.today-note__footer {
+.today-page__section {
   display: flex;
-  gap: 16rpx;
+  flex-direction: column;
+}
+
+.today-page__identity {
+  display: block;
+  max-width: 580rpx;
+}
+
+.today-collapse {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.today-card__title {
-  display: block;
-  color: #f5f5f5;
-  font-size: 34rpx;
-  line-height: 1.35;
-}
-
-.today-card__status {
-  color: #34d399;
-  font-size: 22rpx;
-}
-
-.today-card__status--dirty {
-  color: #fb923c;
-}
-
-.today-section-head__meta {
-  color: #71717a;
-  font-size: 22rpx;
-}
-
-.today-progress {
-  height: 16rpx;
-}
-
-.today-card__metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18rpx;
-}
-
-.today-metric {
-  padding: 22rpx 18rpx;
-  border: 1px solid rgba(16, 185, 129, 0.16);
+  width: 100%;
+  padding: 30rpx 32rpx;
+  border: 1px solid rgba(39, 39, 42, 0.8);
   border-radius: 24rpx;
-  background: rgba(6, 78, 59, 0.14);
+  background: rgba(24, 24, 27, 0.34);
 }
 
-.today-metric__value {
-  display: block;
-  margin-bottom: 8rpx;
-  color: #ecfdf5;
-  font-size: 34rpx;
-  line-height: 1.1;
-}
-
-.today-metric__label {
+.today-collapse__label {
   color: #71717a;
-  font-size: 22rpx;
+  font-size: 26rpx;
 }
 
-.today-task {
-  display: flex;
-  gap: 18rpx;
-  align-items: stretch;
-  padding: 24rpx 4rpx 0;
+.today-collapse__chevron {
+  color: #52525b;
+  font-size: 24rpx;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
 }
 
-.today-task__line {
-  width: 6rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(180deg, rgba(52, 211, 153, 0.92), rgba(16, 185, 129, 0.12));
+.today-collapse__chevron--open {
+  transform: rotate(180deg);
 }
 
-.today-task__copy {
+.today-collapsed {
+  margin-top: 12rpx;
+  padding: 30rpx 32rpx;
+  border: 1px solid rgba(39, 39, 42, 0.66);
+  border-radius: 24rpx;
+  background: rgba(24, 24, 27, 0.26);
+}
+
+.today-collapsed__text {
+  color: #a1a1aa;
+  font-size: 26rpx;
+  line-height: 1.72;
+  font-style: italic;
+}
+
+.today-section-title {
+  margin-bottom: 22rpx;
+  color: #d4d4d8;
+  font-size: 34rpx;
+}
+
+.today-proof-list {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
-}
-
-.today-task__focus {
-  color: #71717a;
-  font-size: 22rpx;
-  letter-spacing: 4rpx;
-  text-transform: uppercase;
-}
-
-.today-task__text {
-  color: #d1fae5;
-  font-size: 28rpx;
-  line-height: 1.5;
+  gap: 18rpx;
 }
 
 .today-proof {
   display: flex;
-  gap: 20rpx;
   align-items: flex-start;
-  width: 100%;
-  padding: 28rpx 30rpx;
-  border: 1px solid rgba(63, 63, 70, 0.72);
-  border-radius: 28rpx;
-  background: rgba(24, 24, 27, 0.78);
-  text-align: left;
+  gap: 24rpx;
+  padding: 34rpx 32rpx;
+  border: 1px solid rgba(39, 39, 42, 0.68);
+  border-radius: 24rpx;
+  background: rgba(24, 24, 27, 0.34);
 }
 
-.today-proof--done {
-  border-color: rgba(16, 185, 129, 0.28);
-  background: linear-gradient(145deg, rgba(6, 95, 70, 0.32), rgba(17, 24, 39, 0.74));
+.today-proof__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38rpx;
+  height: 38rpx;
+  margin-top: 2rpx;
+  border: 2rpx solid rgba(82, 82, 91, 0.88);
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.today-proof__icon--done {
+  border-color: #34d399;
+  background: rgba(6, 95, 70, 0.3);
 }
 
 .today-proof__check {
-  padding-top: 6rpx;
+  color: #34d399;
+  font-size: 22rpx;
+  font-weight: 600;
 }
 
-.today-proof__dot {
-  width: 34rpx;
-  height: 34rpx;
-  border: 1px solid rgba(113, 113, 122, 0.8);
-  border-radius: 999rpx;
-  background: rgba(39, 39, 42, 0.6);
+.today-proof__text {
+  color: #e4e4e7;
+  font-size: 28rpx;
+  line-height: 1.6;
 }
 
-.today-proof__dot--done {
-  border-color: rgba(16, 185, 129, 0.18);
-  background: #34d399;
-  box-shadow: 0 0 0 10rpx rgba(52, 211, 153, 0.1);
+.today-proof__text--done {
+  color: #71717a;
+  text-decoration: line-through;
 }
 
-.today-proof__copy {
+.today-alignment__top {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 10rpx;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14rpx;
 }
 
-.today-proof__title {
-  color: #f5f5f5;
-  font-size: 30rpx;
-  line-height: 1.38;
+.today-alignment__label {
+  color: #a1a1aa;
+  font-size: 26rpx;
 }
 
-.today-proof__description {
+.today-alignment__value {
+  color: #34d399;
+  font-size: 48rpx;
+  line-height: 1;
+  font-weight: 300;
+}
+
+.today-alignment__hint {
+  margin-bottom: 18rpx;
   color: #71717a;
   font-size: 24rpx;
   line-height: 1.6;
 }
 
-.today-note {
+.today-reflection__prompt {
+  margin-bottom: 18rpx;
+  color: #d4d4d8;
+  font-size: 30rpx;
+  line-height: 1.6;
+}
+
+.today-reflection__input {
   min-height: 220rpx;
 }
 
-@media (max-width: 720rpx) {
-  .today-card__metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.today-utility {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  padding-top: 6rpx;
+}
+
+.today-utility__links {
+  display: flex;
+  gap: 28rpx;
+  align-items: center;
+}
+
+.today-utility__link {
+  color: #71717a;
+  font-size: 24rpx;
+}
+
+.today-utility__reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.today-reminder {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding: 30rpx 32rpx;
+  border: 1px solid rgba(39, 39, 42, 0.66);
+  border-radius: 24rpx;
+  background: rgba(24, 24, 27, 0.26);
+}
+
+.today-reminder__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.today-reminder__type,
+.today-reminder__time {
+  color: #71717a;
+  font-size: 22rpx;
+}
+
+.today-reminder__title {
+  color: #f4f4f5;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.today-reminder__message {
+  color: #a1a1aa;
+  font-size: 24rpx;
+  line-height: 1.64;
+}
+
+.today-reminder__actions {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+  margin-top: 4rpx;
+}
+
+.today-reminder__button {
+  min-width: 120rpx;
 }
 </style>

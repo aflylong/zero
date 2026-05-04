@@ -211,11 +211,6 @@ function goBack() {
 }
 
 onShow(() => {
-  if (!store.state.data.onboardingCompleted) {
-    uni.reLaunch({ url: "/pages/onboarding/index" });
-    return;
-  }
-
   store.refreshReminderPrompts();
   if (!dirty.value) {
     hydrateForm();

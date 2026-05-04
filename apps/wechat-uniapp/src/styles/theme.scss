@@ -1,14 +1,14 @@
-$app-bg: #030303;
-$card-bg: rgba(24, 24, 27, 0.78);
-$card-border: rgba(63, 63, 70, 0.72);
-$card-soft: rgba(39, 39, 42, 0.45);
+$app-bg: #000;
+$card-bg: rgba(24, 24, 27, 0.72);
+$card-border: rgba(63, 63, 70, 0.64);
+$card-soft: rgba(24, 24, 27, 0.52);
 $text-main: #f5f5f5;
 $text-soft: #d4d4d8;
 $text-muted: #71717a;
 $text-faint: #52525b;
 $accent: #34d399;
 $accent-deep: rgba(6, 95, 70, 0.4);
-$accent-border: rgba(16, 185, 129, 0.28);
+$accent-border: rgba(16, 185, 129, 0.24);
 $warn: #fb923c;
 $warn-bg: rgba(124, 45, 18, 0.35);
 $warn-border: rgba(251, 146, 60, 0.25);
@@ -48,8 +48,14 @@ input {
   background: $app-bg;
 }
 
+.page-shell__frame {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
 .page-shell__content {
-  padding: 32rpx 48rpx 220rpx;
+  padding: 64rpx 48rpx 180rpx;
 }
 
 .page-shell__content--no-tab {
@@ -97,9 +103,9 @@ input {
 }
 
 .glass-card {
-  padding: 32rpx;
+  padding: 36rpx;
   border: 1px solid $card-border;
-  border-radius: 28rpx;
+  border-radius: 24rpx;
   background: $card-bg;
 }
 
@@ -107,13 +113,13 @@ input {
   padding: 40rpx;
   border: 1px solid $accent-border;
   border-radius: 32rpx;
-  background: linear-gradient(145deg, rgba(6, 78, 59, 0.45), rgba(17, 24, 39, 0.4));
+  background: linear-gradient(145deg, rgba(6, 78, 59, 0.3), rgba(17, 24, 39, 0.2));
 }
 
 .input-shell,
 .textarea-shell {
   width: 100%;
-  padding: 26rpx 28rpx;
+  padding: 28rpx 30rpx;
   border: 1px solid $card-border;
   border-radius: 24rpx;
   background: $card-soft;
@@ -140,7 +146,7 @@ input {
 .ghost-button,
 .danger-button {
   min-width: 0;
-  padding: 20rpx 28rpx;
+  padding: 18rpx 28rpx;
   border-radius: 999rpx;
   font-size: 24rpx;
 }
@@ -153,7 +159,7 @@ input {
 
 .ghost-button {
   border: 1px solid $card-border;
-  background: rgba(17, 24, 39, 0.28);
+  background: rgba(17, 24, 39, 0.22);
   color: $text-soft;
 }
 
@@ -201,5 +207,5 @@ input {
 }
 
 .safe-spacer {
-  height: calc(env(safe-area-inset-bottom) + 20rpx);
+  height: calc(env(safe-area-inset-bottom) + 12rpx);
 }

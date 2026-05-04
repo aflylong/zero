@@ -1,7 +1,9 @@
 <template>
   <view class="page-shell">
-    <view class="page-shell__content" :class="{ 'page-shell__content--no-tab': !tabKey }">
-      <slot />
+    <view class="page-shell__frame">
+      <view class="page-shell__content" :class="{ 'page-shell__content--no-tab': !tabKey }">
+        <slot />
+      </view>
     </view>
     <BottomTabBar v-if="tabKey" :active="tabKey" />
     <BottomSafeSpacer v-else />
