@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+*.log
+
+node_modules/
+dist/
+unpackage/
+
+apps/wechat-uniapp/node_modules/
+apps/wechat-uniapp/dist/
+apps/wechat-uniapp/unpackage/
