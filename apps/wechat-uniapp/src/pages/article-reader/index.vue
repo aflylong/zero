@@ -111,6 +111,19 @@
           </button>
         </view>
       </GlassCard>
+
+      <GlassCard card-class="reader-page__source">
+        <SectionLabel>文章来源</SectionLabel>
+        <view class="section-stack">
+          <text class="reader-page__source-title">{{ articleTitle }}</text>
+          <text class="muted-text">
+            当前阅读页使用的是适配小程序体验的章节化内容，必要时你也可以回到原始文章来源继续阅读。
+          </text>
+          <button class="ghost-button reader-page__source-button" @tap="copySourceLink">
+            复制原文链接
+          </button>
+        </view>
+      </GlassCard>
     </view>
   </PageShell>
 </template>
@@ -122,7 +135,7 @@ import GlassCard from "@/components/GlassCard.vue";
 import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { articleSections, articleTitle } from "@/static/content/article";
+import { articleSections, articleSourceUrl, articleTitle } from "@/static/content/article";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ArticleParagraph } from "@/types/app";
 
@@ -225,6 +238,19 @@ function goBack() {
 
   uni.reLaunch({ url: "/pages/path/index" });
 }
+
+function copySourceLink() {
+  uni.setClipboardData({
+    data: articleSourceUrl,
+    showToast: false,
+    success: () => {
+      uni.showToast({
+        title: "原文链接已复制",
+        icon: "success",
+      });
+    },
+  });
+}
 </script>
 
 <style scoped lang="scss">
@@ -290,7 +316,8 @@ function goBack() {
 
 .reader-page__catalog,
 .reader-page__article,
-.reader-page__actions {
+.reader-page__actions,
+.reader-page__source {
   display: flex;
   flex-direction: column;
 }
@@ -408,5 +435,15 @@ function goBack() {
 
 .reader-page__paragraph-text {
   flex: 1;
+}
+
+.reader-page__source-title {
+  color: #f5f5f5;
+  font-size: 30rpx;
+  line-height: 1.35;
+}
+
+.reader-page__source-button {
+  align-self: flex-start;
 }
 </style>
