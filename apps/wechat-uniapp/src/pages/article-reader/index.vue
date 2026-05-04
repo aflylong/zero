@@ -28,40 +28,52 @@
       </GradientHeroCard>
 
       <GlassCard card-class="reader-page__catalog">
-        <view class="reader-page__section-head">
-          <view class="section-stack">
+        <view class="reader-page__section-head reader-page__section-head--catalog">
+          <view class="reader-page__section-copy">
             <SectionLabel>章节导航</SectionLabel>
             <text class="reader-page__section-title">切换章节继续阅读</text>
+            <text class="reader-page__section-meta">{{ lastOpenedLabel }}</text>
           </view>
-          <text class="reader-page__section-meta">{{ lastOpenedLabel }}</text>
         </view>
 
-        <scroll-view scroll-x class="reader-page__chips">
-          <view class="reader-page__chips-track">
+        <scroll-view scroll-x show-scrollbar="false" class="reader-page__chapter-scroll">
+          <view class="reader-page__chapter-track">
             <button
               v-for="(section, index) in sections"
               :key="section.id"
-              class="tag-chip reader-page__chip"
+              class="reader-page__chapter-card"
               :class="chipClass(section.id)"
               @tap="handleOpenSection(section.id)"
             >
-              <text class="reader-page__chip-index">{{ index + 1 }}</text>
-              <text>{{ section.title }}</text>
+              <view class="reader-page__chapter-card-top">
+                <text class="reader-page__chapter-card-index">{{ index + 1 }}</text>
+                <text v-if="section.id === currentSection.id" class="reader-page__chapter-card-badge">
+                  当前
+                </text>
+                <text
+                  v-else-if="completedIds.includes(section.id)"
+                  class="reader-page__chapter-card-badge reader-page__chapter-card-badge--done"
+                >
+                  已读
+                </text>
+              </view>
+              <text class="reader-page__chapter-card-kicker">{{ section.kicker }}</text>
+              <text class="reader-page__chapter-card-title">{{ section.title }}</text>
             </button>
           </view>
         </scroll-view>
       </GlassCard>
 
       <GlassCard card-class="reader-page__article">
-        <view class="reader-page__section-head">
-          <view class="section-stack">
+        <view class="reader-page__article-head">
+          <view class="reader-page__article-meta">
             <SectionLabel>{{ currentSection.kicker }}</SectionLabel>
-            <text class="reader-page__article-title">{{ currentSection.title }}</text>
-            <text class="body-text">{{ currentSection.summary }}</text>
+            <view class="reader-page__chapter-badge">
+              <text>第 {{ currentIndex + 1 }} 章</text>
+            </view>
           </view>
-          <view class="reader-page__chapter-badge">
-            <text>第 {{ currentIndex + 1 }} 章</text>
-          </view>
+          <text class="reader-page__article-title">{{ currentSection.title }}</text>
+          <text class="body-text reader-page__article-summary">{{ currentSection.summary }}</text>
         </view>
 
         <view class="reader-page__accent-line">
@@ -83,7 +95,7 @@
 
       <GlassCard card-class="reader-page__actions">
         <view class="reader-page__section-head">
-          <view class="section-stack">
+          <view class="reader-page__section-copy">
             <SectionLabel>阅读进度</SectionLabel>
             <text class="reader-page__section-title">读完当前章节后更新进度</text>
           </view>
@@ -92,21 +104,23 @@
           </view>
         </view>
 
-        <view class="action-row">
+        <view class="reader-page__primary-action">
           <button
-            class="pill-button"
+            class="pill-button reader-page__primary-button"
             @tap="markCurrentAsRead"
           >
             {{ isCurrentCompleted ? "已记录已读" : "标记当前已读" }}
           </button>
+        </view>
+        <view class="reader-page__nav-actions">
           <button
-            class="ghost-button"
+            class="ghost-button reader-page__nav-button"
             :disabled="!hasPrevSection"
             @tap="openPrevSection"
           >
             上一章
           </button>
-          <button class="ghost-button" @tap="handleNextAction">
+          <button class="ghost-button reader-page__nav-button" @tap="handleNextAction">
             {{ hasNextSection ? "下一章" : "完成阅读" }}
           </button>
         </view>
@@ -182,8 +196,9 @@ const lastOpenedLabel = computed(() => {
 
 function chipClass(sectionId: string) {
   return {
-    "tag-chip--active": sectionId === currentSection.value.id,
-    "reader-page__chip--done": completedIds.value.includes(sectionId),
+    "reader-page__chapter-card--active": sectionId === currentSection.value.id,
+    "reader-page__chapter-card--done":
+      completedIds.value.includes(sectionId) && sectionId !== currentSection.value.id,
   };
 }
 
@@ -253,7 +268,7 @@ function copySourceLink() {
 .reader-page {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 32rpx;
 }
 
 .reader-page__topbar {
@@ -318,12 +333,35 @@ function copySourceLink() {
   flex-direction: column;
 }
 
+.reader-page__catalog,
+.reader-page__actions,
+.reader-page__source {
+  background: rgba(18, 18, 20, 0.68);
+}
+
+.reader-page__article {
+  padding: 42rpx 36rpx 46rpx;
+  border-color: rgba(39, 39, 42, 0.56);
+  background: rgba(10, 10, 11, 0.84);
+}
+
+.reader-page__section-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .reader-page__section-head {
   display: flex;
   gap: 20rpx;
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 24rpx;
+}
+
+.reader-page__section-head--catalog {
+  margin-bottom: 20rpx;
 }
 
 .reader-page__section-title,
@@ -343,66 +381,145 @@ function copySourceLink() {
 .reader-page__section-meta {
   color: #71717a;
   font-size: 22rpx;
-  white-space: nowrap;
+  line-height: 1.55;
 }
 
-.reader-page__chips {
-  white-space: nowrap;
+.reader-page__section-head--catalog .reader-page__section-meta {
+  margin-top: 10rpx;
 }
 
-.reader-page__chips-track {
-  display: inline-flex;
-  gap: 16rpx;
+.reader-page__chapter-scroll {
+  width: 100%;
 }
 
-.reader-page__chip {
-  display: inline-flex;
+.reader-page__chapter-track {
+  display: flex;
+  gap: 20rpx;
+  padding-right: 18rpx;
+}
+
+.reader-page__chapter-card {
+  display: flex;
+  flex: 0 0 384rpx;
+  flex-direction: column;
+  gap: 14rpx;
+  width: 384rpx;
+  min-height: 206rpx;
+  padding: 28rpx 28rpx 30rpx;
+  border: 1px solid rgba(63, 63, 70, 0.72);
+  border-radius: 30rpx;
+  background: linear-gradient(180deg, rgba(20, 20, 22, 0.92), rgba(17, 24, 39, 0.28));
+  text-align: left;
+  white-space: normal;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  flex-shrink: 0;
+}
+
+.reader-page__chapter-card-top {
+  display: flex;
   gap: 12rpx;
   align-items: center;
+  justify-content: space-between;
 }
 
-.reader-page__chip--done {
-  border-color: rgba(16, 185, 129, 0.24);
-  background: rgba(6, 95, 70, 0.22);
-  color: #d1fae5;
+.reader-page__chapter-card-index {
+  color: #a1a1aa;
+  font-size: 40rpx;
+  line-height: 1;
+  font-weight: 600;
 }
 
-.reader-page__chip-index {
-  opacity: 0.72;
+.reader-page__chapter-card--active .reader-page__chapter-card-index {
+  color: #34d399;
 }
 
+.reader-page__chapter-card-kicker {
+  color: #71717a;
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+
+.reader-page__chapter-card-title {
+  color: #f5f5f5;
+  font-size: 28rpx;
+  line-height: 1.5;
+  white-space: normal;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  word-break: break-word;
+}
+
+.reader-page__chapter-card-badge,
 .reader-page__chapter-badge,
 .reader-page__read-state {
-  padding: 14rpx 22rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92rpx;
+  padding: 12rpx 18rpx;
   border: 1px solid rgba(63, 63, 70, 0.72);
   border-radius: 999rpx;
   background: rgba(17, 24, 39, 0.35);
   color: #d4d4d8;
   font-size: 22rpx;
   white-space: nowrap;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
+.reader-page__chapter-card-badge--done,
 .reader-page__read-state--done {
   border-color: rgba(16, 185, 129, 0.24);
-  background: rgba(6, 95, 70, 0.26);
-  color: #bbf7d0;
+  background: rgba(6, 95, 70, 0.22);
+  color: #d1fae5;
+}
+
+.reader-page__chapter-card--active {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: linear-gradient(180deg, rgba(6, 95, 70, 0.34), rgba(17, 24, 39, 0.36));
+  box-shadow: inset 0 0 0 1rpx rgba(52, 211, 153, 0.14);
+}
+
+.reader-page__chapter-card--done {
+  border-color: rgba(82, 82, 91, 0.88);
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.72), rgba(17, 24, 39, 0.2));
+}
+
+.reader-page__article-head {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.reader-page__article-meta {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.reader-page__article-summary {
+  display: block;
 }
 
 .reader-page__accent-line {
-  margin-bottom: 24rpx;
-  padding: 24rpx 28rpx;
+  margin-bottom: 30rpx;
+  padding: 4rpx 0 4rpx 24rpx;
   border-left: 4rpx solid rgba(52, 211, 153, 0.8);
-  border-radius: 0 24rpx 24rpx 0;
-  background: linear-gradient(90deg, rgba(6, 95, 70, 0.24) 0%, rgba(17, 24, 39, 0.08) 100%);
+  border-radius: 0;
+  background: transparent;
   color: #d1fae5;
-  font-size: 26rpx;
-  line-height: 1.7;
+  font-size: 28rpx;
+  line-height: 1.68;
 }
 
 .reader-page__paragraphs {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 20rpx;
 }
 
 .reader-page__paragraph {
@@ -414,11 +531,10 @@ function copySourceLink() {
 }
 
 .reader-page__paragraph--quote {
-  padding: 24rpx 28rpx;
-  border: 1px solid rgba(16, 185, 129, 0.18);
-  border-radius: 24rpx;
-  background: rgba(6, 95, 70, 0.16);
-  color: #ecfdf5;
+  padding-left: 24rpx;
+  border-left: 4rpx solid rgba(113, 113, 122, 0.65);
+  background: transparent;
+  color: #f4f4f5;
 }
 
 .reader-page__paragraph--bullet {
@@ -441,5 +557,28 @@ function copySourceLink() {
 
 .reader-page__source-button {
   align-self: flex-start;
+}
+
+.reader-page__primary-action {
+  margin-bottom: 16rpx;
+}
+
+.reader-page__primary-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.reader-page__nav-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.reader-page__nav-button {
+  flex: 1;
+  justify-content: center;
+}
+
+.reader-page__nav-button[disabled] {
+  opacity: 0.45;
 }
 </style>

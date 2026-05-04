@@ -48,7 +48,7 @@ function handleTap(path: string) {
 }
 
 .tabbar__frame {
-  max-width: 460px;
+  max-width: 448px;
   margin: 0 auto;
   padding: 10rpx 16rpx 0;
 }
