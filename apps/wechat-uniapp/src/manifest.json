@@ -1,5 +1,5 @@
 {
-    "name" : "",
+    "name" : "Self Improvement",
     "appid" : "",
     "description" : "",
     "versionName" : "1.0.0",
@@ -52,7 +52,9 @@
     "mp-weixin" : {
         "appid" : "",
         "setting" : {
-            "urlCheck" : false
+            "urlCheck" : false,
+            "minified" : true,
+            "enhance" : true
         },
         "usingComponents" : true
     },

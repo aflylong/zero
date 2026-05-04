@@ -1,0 +1,205 @@
+$app-bg: #030303;
+$card-bg: rgba(24, 24, 27, 0.78);
+$card-border: rgba(63, 63, 70, 0.72);
+$card-soft: rgba(39, 39, 42, 0.45);
+$text-main: #f5f5f5;
+$text-soft: #d4d4d8;
+$text-muted: #71717a;
+$text-faint: #52525b;
+$accent: #34d399;
+$accent-deep: rgba(6, 95, 70, 0.4);
+$accent-border: rgba(16, 185, 129, 0.28);
+$warn: #fb923c;
+$warn-bg: rgba(124, 45, 18, 0.35);
+$warn-border: rgba(251, 146, 60, 0.25);
+$danger: #f87171;
+
+page {
+  background: $app-bg;
+  color: $text-main;
+  font-size: 28rpx;
+}
+
+view,
+text {
+  box-sizing: border-box;
+}
+
+button {
+  padding: 0;
+  margin: 0;
+  line-height: 1.35;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+button::after {
+  border: 0;
+}
+
+textarea,
+input {
+  color: $text-main;
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: $app-bg;
+}
+
+.page-shell__content {
+  padding: 32rpx 48rpx 220rpx;
+}
+
+.page-shell__content--no-tab {
+  padding-bottom: 96rpx;
+}
+
+.section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.section-gap {
+  margin-bottom: 40rpx;
+}
+
+.section-label {
+  margin-bottom: 20rpx;
+  color: $text-muted;
+  font-size: 20rpx;
+  letter-spacing: 4rpx;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: 64rpx;
+  line-height: 1.16;
+  color: $text-main;
+}
+
+.page-title {
+  font-size: 48rpx;
+  line-height: 1.18;
+  color: $text-main;
+}
+
+.body-text {
+  color: $text-soft;
+  line-height: 1.72;
+}
+
+.muted-text {
+  color: $text-muted;
+  line-height: 1.68;
+}
+
+.glass-card {
+  padding: 32rpx;
+  border: 1px solid $card-border;
+  border-radius: 28rpx;
+  background: $card-bg;
+}
+
+.hero-card {
+  padding: 40rpx;
+  border: 1px solid $accent-border;
+  border-radius: 32rpx;
+  background: linear-gradient(145deg, rgba(6, 78, 59, 0.45), rgba(17, 24, 39, 0.4));
+}
+
+.input-shell,
+.textarea-shell {
+  width: 100%;
+  padding: 26rpx 28rpx;
+  border: 1px solid $card-border;
+  border-radius: 24rpx;
+  background: $card-soft;
+  color: $text-main;
+  font-size: 28rpx;
+}
+
+.textarea-shell {
+  min-height: 180rpx;
+}
+
+.input-shell::placeholder,
+.textarea-shell::placeholder {
+  color: $text-faint;
+}
+
+.action-row {
+  display: flex;
+  gap: 20rpx;
+  flex-wrap: wrap;
+}
+
+.pill-button,
+.ghost-button,
+.danger-button {
+  min-width: 0;
+  padding: 20rpx 28rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+}
+
+.pill-button {
+  background: $accent;
+  color: #022c22;
+  font-weight: 600;
+}
+
+.ghost-button {
+  border: 1px solid $card-border;
+  background: rgba(17, 24, 39, 0.28);
+  color: $text-soft;
+}
+
+.danger-button {
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(127, 29, 29, 0.22);
+  color: #fecaca;
+}
+
+.accent-text {
+  color: $accent;
+}
+
+.warn-text {
+  color: $warn;
+}
+
+.progress-track {
+  overflow: hidden;
+  width: 100%;
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: rgba(39, 39, 42, 0.9);
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #047857 0%, #34d399 100%);
+}
+
+.tag-chip {
+  padding: 14rpx 22rpx;
+  border: 1px solid $card-border;
+  border-radius: 999rpx;
+  background: rgba(17, 24, 39, 0.3);
+  color: $text-soft;
+  font-size: 22rpx;
+}
+
+.tag-chip--active {
+  border-color: $accent-border;
+  background: rgba(6, 95, 70, 0.28);
+  color: #d1fae5;
+}
+
+.safe-spacer {
+  height: calc(env(safe-area-inset-bottom) + 20rpx);
+}

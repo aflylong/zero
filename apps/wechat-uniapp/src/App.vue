@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { useAppStore } from "@/stores/useAppStore";
+
+const store = useAppStore();
+
 onLaunch(() => {
-  console.log("App Launch");
+  store.initialize();
 });
+
 onShow(() => {
-  console.log("App Show");
+  store.refreshReminderPrompts();
 });
+
 onHide(() => {
-  console.log("App Hide");
+  store.refreshReminderPrompts();
 });
 </script>
-<style></style>
+<style lang="scss">
+@use "@/styles/theme.scss";
+</style>
