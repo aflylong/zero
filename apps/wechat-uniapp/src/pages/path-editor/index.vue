@@ -1,18 +1,17 @@
 <template>
-  <PageShell>
+  <PageShell
+    title="道路编辑"
+    topbar-mode="secondary"
+    back-url="/pages/path/index"
+  >
     <view class="editor-page">
-      <view class="editor-page__top">
-        <button class="editor-page__link" @tap="goBack">返回道路</button>
-        <button class="editor-page__link" @tap="openArticleReader">阅读原文</button>
+      <view class="editor-hero">
+        <SectionLabel>方向与主线</SectionLabel>
+        <text class="editor-hero__title">把愿景、反愿景和阶段主线整理成真正会驱动今天的内容。</text>
+        <text class="muted-text">这里是实时保存，主 tab 只保留摘要与执行面。</text>
       </view>
 
-      <view class="editor-page__hero">
-        <text class="section-label">道路编辑</text>
-        <text class="page-title editor-page__title">把愿景和主线整理成真正会驱动今天的内容。</text>
-        <text class="muted-text">这里的内容会实时保存，并同步影响今日页、身份页和提醒逻辑。</text>
-      </view>
-
-      <view class="glass-card editor-card">
+      <GlassCard card-class="editor-card">
         <view class="editor-fields">
           <view class="field-block">
             <text class="field-label">愿景</text>
@@ -32,7 +31,7 @@
               class="textarea-shell"
               maxlength="240"
               auto-height
-              placeholder="描述那个让你不愿回去的旧轨道。"
+              placeholder="描述那个你不愿回去的旧轨道。"
             />
           </view>
 
@@ -68,14 +67,23 @@
             />
           </view>
         </view>
-      </view>
+      </GlassCard>
     </view>
+
+    <template #footer>
+      <view class="editor-footer">
+        <button class="ghost-button editor-footer__button" @tap="openArticleReader">阅读原文</button>
+        <button class="pill-button editor-footer__button" @tap="goBack">返回道路</button>
+      </view>
+    </template>
   </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
+import SectionLabel from "@/components/SectionLabel.vue";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
@@ -120,50 +128,45 @@ function openArticleReader() {
 </script>
 
 <style scoped lang="scss">
-.editor-page {
-  display: flex;
-  flex-direction: column;
-  gap: 36rpx;
-}
-
-.editor-page__top {
-  display: flex;
-  gap: 28rpx;
-  align-items: center;
-}
-
-.editor-page__link {
-  color: #71717a;
-  font-size: 24rpx;
-}
-
-.editor-page__hero {
-  display: flex;
-  flex-direction: column;
-}
-
-.editor-page__title {
-  max-width: 620rpx;
-}
-
-.editor-card {
-  padding: 34rpx 32rpx;
-}
-
+.editor-page,
+.editor-hero,
+.editor-card,
 .editor-fields,
 .field-block {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
 }
 
-.editor-fields {
+.editor-page {
   gap: 24rpx;
+}
+
+.editor-hero,
+.editor-card,
+.editor-fields,
+.field-block {
+  gap: 18rpx;
+}
+
+.editor-hero__title {
+  color: #f5f5f5;
+  font-size: 34rpx;
+  line-height: 1.42;
 }
 
 .field-label {
   color: #f4f4f5;
   font-size: 24rpx;
   line-height: 1.4;
+}
+
+.editor-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.editor-footer__button {
+  justify-content: center;
 }
 </style>

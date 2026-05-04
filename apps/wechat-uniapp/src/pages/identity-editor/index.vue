@@ -1,17 +1,17 @@
 <template>
-  <PageShell>
+  <PageShell
+    title="身份编辑"
+    topbar-mode="secondary"
+    back-url="/pages/identity/index"
+  >
     <view class="editor-page">
-      <view class="editor-page__top">
-        <button class="editor-page__link" @tap="goBack">返回身份</button>
+      <view class="editor-hero">
+        <SectionLabel>定义与证据</SectionLabel>
+        <text class="editor-hero__title">把身份句、核心信念和证明法则整理成一个独立编辑面。</text>
+        <text class="muted-text">这里也是实时保存，身份 tab 只保留摘要和方向感。</text>
       </view>
 
-      <view class="editor-page__hero">
-        <text class="section-label">身份编辑</text>
-        <text class="page-title editor-page__title">把身份句、核心信念和证明法则整理成一个独立编辑面。</text>
-        <text class="muted-text">这里也是实时保存，主 tab 不再往下拖一整段编辑器。</text>
-      </view>
-
-      <view class="glass-card editor-card">
+      <GlassCard card-class="editor-card">
         <view class="editor-fields">
           <view class="field-block">
             <text class="field-label">我是谁</text>
@@ -56,73 +56,79 @@
               </view>
             </view>
           </view>
+        </view>
+      </GlassCard>
 
-          <view class="field-block">
-            <view class="field-row">
-              <text class="field-label">证明法则</text>
-              <button class="ghost-button" @tap="store.createProofRule()">新增法则</button>
+      <GlassCard card-class="editor-card">
+        <view class="field-row">
+          <text class="field-label">证明法则</text>
+          <button class="ghost-button" @tap="store.createProofRule()">新增法则</button>
+        </view>
+        <view class="rule-list">
+          <view
+            v-for="rule in store.state.data.proofRules"
+            :key="rule.id"
+            class="identity-rule"
+          >
+            <view class="identity-rule__top">
+              <text class="tag-chip" :class="{ 'tag-chip--active': rule.active }">
+                {{ rule.active ? "已启用" : "已停用" }}
+              </text>
+              <button class="danger-button" @tap="store.removeProofRule(rule.id)">删除</button>
             </view>
-            <view class="rule-list">
-              <view
-                v-for="rule in store.state.data.proofRules"
-                :key="rule.id"
-                class="identity-rule"
-              >
-                <view class="identity-rule__top">
-                  <text class="tag-chip" :class="{ 'tag-chip--active': rule.active }">
-                    {{ rule.active ? "已启用" : "已停用" }}
-                  </text>
-                  <button class="danger-button" @tap="store.removeProofRule(rule.id)">删除</button>
-                </view>
 
-                <view class="identity-rule__fields">
-                  <input
-                    :value="rule.title"
-                    class="input-shell"
-                    maxlength="32"
-                    placeholder="例如：决定后 5 分钟内开始行动"
-                    @input="updateRuleField(rule, 'title', $event)"
-                  />
-                  <textarea
-                    :value="rule.description"
-                    class="textarea-shell identity-rule__textarea"
-                    maxlength="120"
-                    auto-height
-                    placeholder="补充一下什么算完成，什么才是真正的证据。"
-                    @input="updateRuleField(rule, 'description', $event)"
-                  />
-                  <view class="action-row">
-                    <button
-                      class="ghost-button identity-cadence-chip"
-                      :class="{ 'identity-cadence-chip--active': rule.cadence === 'daily' }"
-                      @tap="updateRuleCadence(rule, 'daily')"
-                    >
-                      每日
-                    </button>
-                    <button
-                      class="ghost-button identity-cadence-chip"
-                      :class="{ 'identity-cadence-chip--active': rule.cadence === 'weekly' }"
-                      @tap="updateRuleCadence(rule, 'weekly')"
-                    >
-                      每周
-                    </button>
-                    <button class="ghost-button" @tap="toggleRuleActive(rule)">
-                      {{ rule.active ? "停用法则" : "重新启用" }}
-                    </button>
-                  </view>
-                </view>
+            <view class="identity-rule__fields">
+              <input
+                :value="rule.title"
+                class="input-shell"
+                maxlength="32"
+                placeholder="例如：决定后 5 分钟内开始行动"
+                @input="updateRuleField(rule, 'title', $event)"
+              />
+              <textarea
+                :value="rule.description"
+                class="textarea-shell identity-rule__textarea"
+                maxlength="120"
+                auto-height
+                placeholder="补充一下什么算完成，什么才是真正的证据。"
+                @input="updateRuleField(rule, 'description', $event)"
+              />
+              <view class="action-row">
+                <button
+                  class="ghost-button identity-cadence-chip"
+                  :class="{ 'identity-cadence-chip--active': rule.cadence === 'daily' }"
+                  @tap="updateRuleCadence(rule, 'daily')"
+                >
+                  每日
+                </button>
+                <button
+                  class="ghost-button identity-cadence-chip"
+                  :class="{ 'identity-cadence-chip--active': rule.cadence === 'weekly' }"
+                  @tap="updateRuleCadence(rule, 'weekly')"
+                >
+                  每周
+                </button>
+                <button class="ghost-button" @tap="toggleRuleActive(rule)">
+                  {{ rule.active ? "停用法则" : "重新启用" }}
+                </button>
               </view>
             </view>
           </view>
         </view>
-      </view>
+      </GlassCard>
     </view>
+
+    <template #footer>
+      <button class="pill-button editor-footer__button" @tap="goBack">返回身份</button>
+    </template>
   </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
+import SectionLabel from "@/components/SectionLabel.vue";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ProofRule } from "@/types/app";
 
@@ -190,36 +196,9 @@ function goBack() {
 </script>
 
 <style scoped lang="scss">
-.editor-page {
-  display: flex;
-  flex-direction: column;
-  gap: 36rpx;
-}
-
-.editor-page__top {
-  display: flex;
-  gap: 28rpx;
-  align-items: center;
-}
-
-.editor-page__link {
-  color: #71717a;
-  font-size: 24rpx;
-}
-
-.editor-page__hero {
-  display: flex;
-  flex-direction: column;
-}
-
-.editor-page__title {
-  max-width: 620rpx;
-}
-
-.editor-card {
-  padding: 34rpx 32rpx;
-}
-
+.editor-page,
+.editor-hero,
+.editor-card,
 .editor-fields,
 .field-block,
 .belief-list,
@@ -228,14 +207,23 @@ function goBack() {
   flex-direction: column;
 }
 
-.editor-fields {
+.editor-page {
   gap: 24rpx;
 }
 
+.editor-hero,
+.editor-card,
+.editor-fields,
 .field-block,
 .belief-list,
 .rule-list {
-  gap: 16rpx;
+  gap: 18rpx;
+}
+
+.editor-hero__title {
+  color: #f5f5f5;
+  font-size: 34rpx;
+  line-height: 1.42;
 }
 
 .field-label {
@@ -245,7 +233,8 @@ function goBack() {
 }
 
 .field-row,
-.belief-row {
+.belief-row,
+.identity-rule__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -264,23 +253,15 @@ function goBack() {
   display: flex;
   flex-direction: column;
   gap: 18rpx;
-  padding: 28rpx;
-  border: 1px solid rgba(39, 39, 42, 0.7);
+  padding: 26rpx;
   border-radius: 24rpx;
-  background: rgba(24, 24, 27, 0.26);
-}
-
-.identity-rule__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
+  background: rgba(10, 10, 11, 0.34);
 }
 
 .identity-rule__fields {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 16rpx;
 }
 
 .identity-rule__textarea {
@@ -288,8 +269,12 @@ function goBack() {
 }
 
 .identity-cadence-chip--active {
-  border-color: rgba(16, 185, 129, 0.28);
-  background: rgba(6, 95, 70, 0.28);
-  color: #d1fae5;
+  border-color: rgba(16, 185, 129, 0.24);
+  background: rgba(6, 95, 70, 0.22);
+}
+
+.editor-footer__button {
+  width: 100%;
+  justify-content: center;
 }
 </style>
