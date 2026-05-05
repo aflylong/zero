@@ -89,19 +89,27 @@
     "list": [
       {
         "pagePath": "pages/today/index",
-        "text": "今日"
+        "text": "今日",
+        "iconPath": "static/tabbar/today.png",
+        "selectedIconPath": "static/tabbar/today-active.png"
       },
       {
         "pagePath": "pages/path/index",
-        "text": "道路"
+        "text": "道路",
+        "iconPath": "static/tabbar/path.png",
+        "selectedIconPath": "static/tabbar/path-active.png"
       },
       {
         "pagePath": "pages/records/index",
-        "text": "记录"
+        "text": "记录",
+        "iconPath": "static/tabbar/records.png",
+        "selectedIconPath": "static/tabbar/records-active.png"
       },
       {
         "pagePath": "pages/identity/index",
-        "text": "身份"
+        "text": "身份",
+        "iconPath": "static/tabbar/identity.png",
+        "selectedIconPath": "static/tabbar/identity-active.png"
       }
     ]
   }
