@@ -1,5 +1,5 @@
 <template>
-  <view class="app-topbar" :class="`app-topbar--${mode}`">
+  <view class="app-topbar" :class="`app-topbar--${mode}`" :style="topbarStyle">
     <view class="app-topbar__row">
       <view class="app-topbar__side app-topbar__side--left">
         <button
@@ -25,6 +25,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
 const props = withDefaults(defineProps<{
   title: string;
   mode?: "tab" | "secondary";
@@ -37,6 +39,55 @@ const props = withDefaults(defineProps<{
   backUrl: "",
   backAction: null,
 });
+
+function resolveTopBarMetrics() {
+  const systemInfo = uni.getSystemInfoSync();
+  const windowWidth = systemInfo.windowWidth ?? 375;
+  const statusBarHeight = systemInfo.statusBarHeight ?? 20;
+  const fallbackHorizontalPadding = 16;
+  const fallbackSideWidth = 88;
+  const fallbackNavHeight = 44;
+  const getMenuButtonRect = (
+    uni as typeof uni & {
+      getMenuButtonBoundingClientRect?: () => {
+        top: number;
+        right: number;
+        width: number;
+        height: number;
+      };
+    }
+  ).getMenuButtonBoundingClientRect;
+  const menuButtonRect = typeof getMenuButtonRect === "function"
+    ? getMenuButtonRect()
+    : null;
+
+  if (!menuButtonRect) {
+    return {
+      statusBarHeight,
+      navHeight: fallbackNavHeight,
+      sideWidth: fallbackSideWidth,
+      horizontalPadding: fallbackHorizontalPadding,
+    };
+  }
+
+  const rightGap = Math.max(windowWidth - menuButtonRect.right, fallbackHorizontalPadding);
+  const navGap = Math.max(menuButtonRect.top - statusBarHeight, 4);
+
+  return {
+    statusBarHeight,
+    navHeight: navGap * 2 + menuButtonRect.height,
+    sideWidth: Math.max(menuButtonRect.width + rightGap, fallbackSideWidth),
+    horizontalPadding: rightGap,
+  };
+}
+
+const topbarMetrics = resolveTopBarMetrics();
+const topbarStyle = computed(() => ({
+  "--app-topbar-status-height": `${topbarMetrics.statusBarHeight}px`,
+  "--app-topbar-nav-height": `${topbarMetrics.navHeight}px`,
+  "--app-topbar-side-width": `${topbarMetrics.sideWidth}px`,
+  "--app-topbar-horizontal-padding": `${topbarMetrics.horizontalPadding}px`,
+}));
 
 function handleBack() {
   if (props.backAction) {
@@ -60,7 +111,7 @@ function handleBack() {
 .app-topbar {
   position: relative;
   z-index: 5;
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--app-topbar-status-height);
   border-bottom: 1px solid rgba(24, 24, 27, 1);
   background: #000;
 }
@@ -68,13 +119,13 @@ function handleBack() {
 .app-topbar__row {
   display: flex;
   align-items: center;
-  min-height: 96rpx;
-  padding: 0 48rpx;
+  min-height: var(--app-topbar-nav-height);
+  padding: 0 var(--app-topbar-horizontal-padding);
 }
 
 .app-topbar__side {
   display: flex;
-  flex: 0 0 148rpx;
+  flex: 0 0 var(--app-topbar-side-width);
   align-items: center;
   min-width: 0;
 }
@@ -90,6 +141,7 @@ function handleBack() {
   align-items: center;
   justify-content: center;
   min-width: 0;
+  padding: 0 12rpx;
 }
 
 .app-topbar__title {
