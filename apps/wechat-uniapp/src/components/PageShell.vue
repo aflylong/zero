@@ -30,7 +30,6 @@
         </view>
       </view>
     </view>
-    <BottomTabBar v-if="shouldRenderBottomTabBar && tabKey" :active="tabKey" />
   </view>
 </template>
 
@@ -38,7 +37,6 @@
 import { computed, useSlots } from "vue";
 import AppTopBar from "@/components/AppTopBar.vue";
 import BottomSafeSpacer from "@/components/BottomSafeSpacer.vue";
-import BottomTabBar from "@/components/BottomTabBar.vue";
 
 const props = withDefaults(defineProps<{
   tabKey?: "today" | "path" | "records" | "identity";
@@ -75,19 +73,6 @@ const topbarModeForComponent = computed<"tab" | "secondary">(() =>
   resolvedTopbarMode.value === "secondary" ? "secondary" : "tab",
 );
 const hasFooter = computed(() => Boolean(slots.footer));
-const shouldRenderBottomTabBar = computed(() => {
-  if (!props.tabKey) {
-    return false;
-  }
-
-  // #ifdef MP-WEIXIN
-  return false;
-  // #endif
-
-  // #ifndef MP-WEIXIN
-  return true;
-  // #endif
-});
 const contentClasses = computed(() => [
   props.contentClass,
   {

@@ -86,7 +86,6 @@
     "selectedColor": "#34d399",
     "backgroundColor": "#000000",
     "borderStyle": "black",
-    "custom": true,
     "list": [
       {
         "pagePath": "pages/today/index",
