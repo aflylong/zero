@@ -1,87 +1,55 @@
 <template>
-  <PageShell
-    title="初始化"
-    topbar-mode="secondary"
-    back-url="/pages/today/index"
-  >
+  <PageShell title="初始化" topbar-mode="tab" compact>
     <view class="onboarding-page">
       <view class="onboarding-hero">
         <SectionLabel>三步启动</SectionLabel>
         <text class="onboarding-hero__title">{{ stepTitle }}</text>
-        <text class="body-text">{{ stepDescription }}</text>
+        <text class="muted-text">{{ stepDescription }}</text>
 
         <view class="progress-track">
           <view class="progress-bar" :style="{ width: `${progressPercent}%` }" />
         </view>
+      </view>
 
-        <view class="onboarding-steps">
-          <view
-            v-for="(item, index) in steps"
-            :key="item.title"
-            class="onboarding-step"
-            :class="{ 'onboarding-step--active': currentStep === index }"
-          >
-            <text class="onboarding-step__index">0{{ index + 1 }}</text>
-            <text class="onboarding-step__title">{{ item.short }}</text>
-          </view>
+      <view class="onboarding-steps">
+        <view
+          v-for="(item, index) in steps"
+          :key="item.short"
+          class="onboarding-step"
+          :class="{ 'onboarding-step--active': currentStep === index }"
+        >
+          <text class="onboarding-step__index">0{{ index + 1 }}</text>
+          <text class="onboarding-step__title">{{ item.short }}</text>
         </view>
       </view>
 
       <GlassCard v-if="currentStep === 0" card-class="onboarding-card">
         <view class="field-block">
-          <text class="field-label">我想成为怎样的人生</text>
+          <text class="field-label">愿景</text>
           <textarea
             v-model="visionText"
             class="textarea-shell"
-            maxlength="300"
+            maxlength="260"
             auto-height
             placeholder="写下你真正想去的生活画面。"
           />
         </view>
 
         <view class="field-block">
-          <text class="field-label">我拒绝回去的版本</text>
+          <text class="field-label">反愿景</text>
           <textarea
             v-model="antiVisionText"
             class="textarea-shell"
-            maxlength="240"
-            auto-height
-            placeholder="写下那个你再也不想继续扮演的人。"
-          />
-        </view>
-
-        <view class="field-block">
-          <text class="field-label">为什么现在必须改变</text>
-          <textarea
-            v-model="whyChangeText"
-            class="textarea-shell"
-            maxlength="240"
-            auto-height
-            placeholder="把情绪换成理由，把理由换成行动压力。"
-          />
-        </view>
-
-        <view class="field-block">
-          <text class="field-label">当前主线任务</text>
-          <input
-            v-model="mainQuestTitle"
-            class="input-shell"
-            maxlength="24"
-            placeholder="给这一阶段的任务起一个名字"
-          />
-          <textarea
-            v-model="mainQuestDescription"
-            class="textarea-shell"
             maxlength="220"
             auto-height
-            placeholder="说明这条主线为什么值得你每天推进。"
+            placeholder="写下你再也不想回去的旧状态。"
           />
         </view>
       </GlassCard>
 
       <GlassCard v-else-if="currentStep === 1" card-class="onboarding-card">
         <view class="field-block">
-          <text class="field-label">身份陈述</text>
+          <text class="field-label">身份句</text>
           <input
             v-model="identityStatement"
             class="input-shell"
@@ -100,102 +68,45 @@
             placeholder="写清楚你不再愿意继续成为谁。"
           />
         </view>
-
-        <view class="field-block">
-          <view class="field-row">
-            <text class="field-label">核心信念</text>
-            <button class="ghost-button" @tap="store.addBelief()">新增一条</button>
-          </view>
-
-          <view class="belief-list">
-            <view
-              v-for="(belief, index) in store.state.data.identityProfile.beliefs"
-              :key="`belief-${index}`"
-              class="belief-row"
-            >
-              <input
-                :value="belief"
-                class="input-shell belief-row__input"
-                maxlength="40"
-                placeholder="写一句会驱动行动的核心信念"
-                @input="handleBeliefInput(index, $event)"
-              />
-              <button class="danger-button" @tap="store.removeBelief(index)">删除</button>
-            </view>
-          </view>
-        </view>
       </GlassCard>
 
       <GlassCard v-else card-class="onboarding-card">
         <view class="field-block">
-          <view class="field-row">
-            <text class="field-label">证明法则</text>
-            <button class="ghost-button" @tap="store.createProofRule()">新增法则</button>
-          </view>
-
-          <view class="rule-list">
-            <view
-              v-for="rule in store.state.data.proofRules"
-              :key="rule.id"
-              class="onboarding-rule"
-            >
-              <view class="field-row">
-                <text class="tag-chip" :class="{ 'tag-chip--active': rule.active }">
-                  {{ rule.active ? "生效中" : "已停用" }}
-                </text>
-                <view class="action-row">
-                  <button class="ghost-button" @tap="toggleRuleActive(rule)">
-                    {{ rule.active ? "停用" : "启用" }}
-                  </button>
-                  <button class="danger-button" @tap="store.removeProofRule(rule.id)">删除</button>
-                </view>
-              </view>
-              <input
-                :value="rule.title"
-                class="input-shell"
-                maxlength="32"
-                placeholder="法则标题"
-                @input="updateRuleField(rule, 'title', $event)"
-              />
-              <textarea
-                :value="rule.description"
-                class="textarea-shell onboarding-rule__textarea"
-                maxlength="120"
-                auto-height
-                placeholder="把它写成可以真的完成的动作。"
-                @input="updateRuleField(rule, 'description', $event)"
-              />
-            </view>
-          </view>
+          <text class="field-label">今天先做什么</text>
+          <input
+            v-model="proofTitle"
+            class="input-shell"
+            maxlength="32"
+            placeholder="写一条今天可以真实完成的动作"
+          />
+          <textarea
+            v-model="proofDescription"
+            class="textarea-shell onboarding-card__small-textarea"
+            maxlength="120"
+            auto-height
+            placeholder="可选：补一句判断标准，例如完成到什么程度算完成。"
+          />
         </view>
 
-        <view class="field-block">
-          <text class="field-label">提醒时间</text>
-          <view class="reminder-list">
-            <view
-              v-for="rule in store.state.data.reminderRules"
-              :key="rule.id"
-              class="reminder-row"
-            >
-              <view class="reminder-row__copy">
-                <text class="reminder-row__title">{{ rule.label }}</text>
-                <text class="muted-text">{{ rule.message }}</text>
-              </view>
-              <view class="reminder-row__meta">
-                <button class="ghost-button" @tap="toggleReminderEnabled(rule)">
-                  {{ rule.enabled ? "已开启" : "已关闭" }}
-                </button>
-                <picker
-                  mode="time"
-                  :value="formatReminder(rule.hour, rule.minute)"
-                  @change="handleReminderTimeChange(rule.id, $event)"
-                >
-                  <view class="tag-chip tag-chip--active">
-                    {{ formatReminder(rule.hour, rule.minute) }}
-                  </view>
-                </picker>
-              </view>
+        <view class="reminder-pair">
+          <view class="reminder-pair__item">
+            <view class="reminder-pair__copy">
+              <text class="field-label">白天提醒</text>
+              <text class="muted-text">把你从惯性里拉回来。</text>
             </view>
+            <picker mode="time" :value="dayReminderTime" @change="handleDayTimeChange">
+              <view class="tag-chip tag-chip--active reminder-pair__time">{{ dayReminderTime }}</view>
+            </picker>
+          </view>
+
+          <view class="reminder-pair__item">
+            <view class="reminder-pair__copy">
+              <text class="field-label">夜间复盘</text>
+              <text class="muted-text">把今天整理成明天的修正。</text>
+            </view>
+            <picker mode="time" :value="nightReminderTime" @change="handleNightTimeChange">
+              <view class="tag-chip tag-chip--active reminder-pair__time">{{ nightReminderTime }}</view>
+            </picker>
           </view>
         </view>
       </GlassCard>
@@ -215,7 +126,7 @@
           :disabled="!canProceed"
           @tap="goNextStep"
         >
-          {{ currentStep === steps.length - 1 ? "完成启动" : "下一步" }}
+          {{ currentStep === steps.length - 1 ? "进入今日" : "下一步" }}
         </button>
       </view>
     </template>
@@ -228,9 +139,9 @@ import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { switchToTab } from "@/services/navigation";
+import { switchToTab, TODAY_PAGE_PATH } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
-import type { ProofRule, ReminderRule } from "@/types/app";
+import type { ReminderRule } from "@/types/app";
 
 type UniValueEvent = Event & {
   detail?: {
@@ -240,22 +151,26 @@ type UniValueEvent = Event & {
 
 const store = useAppStore();
 const currentStep = ref(0);
+const proofTitle = ref("");
+const proofDescription = ref("");
+const dayReminderTime = ref("11:30");
+const nightReminderTime = ref("21:30");
 
 const steps = [
   {
     short: "方向",
-    title: "先写清楚你想去哪里，以及为什么现在必须改变。",
-    description: "愿景和反愿景决定你往哪走，主线任务决定这一周如何真正推进。",
+    title: "先写清楚你要去哪里，以及你不要回到哪里。",
+    description: "这一步只定方向，不做长篇设置。",
   },
   {
     short: "身份",
-    title: "先决定你是谁，再给这句话配上会驱动行动的信念。",
-    description: "身份句负责定调，核心信念负责在你犹豫时把行为重新拉回来。",
+    title: "用一句话决定你今天要按什么身份行动。",
+    description: "身份句负责拉齐行为，反身份负责阻止你退回旧版本。",
   },
   {
-    short: "系统",
-    title: "把证明法则和提醒时间设好，让系统从今天开始自动运行。",
-    description: "第一版先用站内提醒，后面接微信订阅消息时会沿用同一套模型。",
+    short: "启动",
+    title: "只设置今天第一条证明动作和两个提醒时间。",
+    description: "先让系统跑起来，后续再到道路和身份页细调。",
   },
 ] as const;
 
@@ -267,21 +182,6 @@ const visionText = computed({
 const antiVisionText = computed({
   get: () => store.state.data.visionProfile.antiVisionText,
   set: (value: string) => store.updateVisionProfile({ antiVisionText: value }),
-});
-
-const whyChangeText = computed({
-  get: () => store.state.data.visionProfile.whyChangeText,
-  set: (value: string) => store.updateVisionProfile({ whyChangeText: value }),
-});
-
-const mainQuestTitle = computed({
-  get: () => store.state.data.visionProfile.mainQuestTitle,
-  set: (value: string) => store.updateVisionProfile({ mainQuestTitle: value }),
-});
-
-const mainQuestDescription = computed({
-  get: () => store.state.data.visionProfile.mainQuestDescription,
-  set: (value: string) => store.updateVisionProfile({ mainQuestDescription: value }),
 });
 
 const identityStatement = computed({
@@ -299,104 +199,94 @@ const stepTitle = computed(() => steps[currentStep.value]?.title ?? steps[0].tit
 const stepDescription = computed(() => steps[currentStep.value]?.description ?? steps[0].description);
 const canProceed = computed(() => {
   if (currentStep.value === 0) {
-    return Boolean(
-      visionText.value.trim() &&
-        antiVisionText.value.trim() &&
-        whyChangeText.value.trim() &&
-        mainQuestTitle.value.trim() &&
-        mainQuestDescription.value.trim(),
-    );
+    return Boolean(visionText.value.trim() && antiVisionText.value.trim());
   }
 
   if (currentStep.value === 1) {
-    return Boolean(
-      identityStatement.value.trim() &&
-        antiIdentityText.value.trim() &&
-        store.state.data.identityProfile.beliefs.some((belief) => belief.trim()),
-    );
+    return Boolean(identityStatement.value.trim() && antiIdentityText.value.trim());
   }
 
-  return store.state.data.proofRules.some(
-    (rule) => rule.active && rule.title.trim() && rule.description.trim(),
-  );
+  return Boolean(proofTitle.value.trim() && dayReminderTime.value && nightReminderTime.value);
 });
 
 function formatReminder(hour: number, minute: number) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-function detectSuggestedStep() {
-  const step0Ready = Boolean(
-    visionText.value.trim() &&
-      antiVisionText.value.trim() &&
-      whyChangeText.value.trim() &&
-      mainQuestTitle.value.trim() &&
-      mainQuestDescription.value.trim(),
-  );
-  const step1Ready = Boolean(
-    identityStatement.value.trim() &&
-      antiIdentityText.value.trim() &&
-      store.state.data.identityProfile.beliefs.some((belief) => belief.trim()),
-  );
-
-  if (!step0Ready) {
-    return 0;
-  }
-
-  if (!step1Ready) {
-    return 1;
-  }
-
-  return 2;
+function parseReminder(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  return {
+    hour: Number.isNaN(hour) ? 9 : hour,
+    minute: Number.isNaN(minute) ? 0 : minute,
+  };
 }
 
 function eventValue(event: UniValueEvent) {
   return event.detail?.value ?? "";
 }
 
-function handleBeliefInput(index: number, event: UniValueEvent) {
-  store.updateBelief(index, eventValue(event));
+function createReminderRule(input: {
+  source?: ReminderRule;
+  kind: "day" | "night";
+  time: string;
+  label: string;
+  message: string;
+}): ReminderRule {
+  const parsed = parseReminder(input.time);
+  return {
+    id: input.source?.id ?? `reminder-${input.kind}-onboarding`,
+    kind: input.kind,
+    label: input.label,
+    hour: parsed.hour,
+    minute: parsed.minute,
+    enabled: true,
+    deliveryMode: "in-app",
+    subscriptionStatus: "pending",
+    message: input.message,
+    snoozedUntil: null,
+  };
 }
 
-function updateRuleField(rule: ProofRule, field: "title" | "description", event: UniValueEvent) {
-  store.upsertProofRule({
-    ...rule,
-    [field]: eventValue(event),
-  });
+function hydrateDrafts() {
+  const activeRule =
+    store.activeProofRules()[0] ??
+    store.state.data.proofRules[0] ??
+    null;
+  const dayReminder =
+    store.state.data.reminderRules.find((rule) => rule.kind === "day") ??
+    null;
+  const nightReminder =
+    store.state.data.reminderRules.find((rule) => rule.kind === "night") ??
+    null;
+
+  proofTitle.value = activeRule?.title ?? "完成一个今天最关键的动作";
+  proofDescription.value = activeRule?.description ?? "让它小到今天一定能真实完成。";
+  dayReminderTime.value = dayReminder ? formatReminder(dayReminder.hour, dayReminder.minute) : "11:30";
+  nightReminderTime.value = nightReminder ? formatReminder(nightReminder.hour, nightReminder.minute) : "21:30";
 }
 
-function toggleRuleActive(rule: ProofRule) {
-  store.upsertProofRule({
-    ...rule,
-    active: !rule.active,
-  });
-}
-
-function toggleReminderEnabled(rule: ReminderRule) {
-  store.updateReminderRule(rule.id, {
-    enabled: !rule.enabled,
-  });
-}
-
-function handleReminderTimeChange(ruleId: string, event: UniValueEvent) {
-  const value = eventValue(event);
-  const [hour, minute] = value.split(":").map(Number);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) {
-    return;
+function detectSuggestedStep() {
+  if (!visionText.value.trim() || !antiVisionText.value.trim()) {
+    return 0;
   }
 
-  store.updateReminderRule(ruleId, {
-    hour,
-    minute,
-  });
+  if (!identityStatement.value.trim() || !antiIdentityText.value.trim()) {
+    return 1;
+  }
+
+  return 2;
+}
+
+function handleDayTimeChange(event: UniValueEvent) {
+  dayReminderTime.value = eventValue(event) || dayReminderTime.value;
+}
+
+function handleNightTimeChange(event: UniValueEvent) {
+  nightReminderTime.value = eventValue(event) || nightReminderTime.value;
 }
 
 function goPrevStep() {
   currentStep.value = Math.max(0, currentStep.value - 1);
-}
-
-function goToToday() {
-  switchToTab("/pages/today/index");
 }
 
 function goNextStep() {
@@ -413,14 +303,46 @@ function goNextStep() {
     return;
   }
 
+  const existingDayReminder = store.state.data.reminderRules.find((rule) => rule.kind === "day");
+  const existingNightReminder = store.state.data.reminderRules.find((rule) => rule.kind === "night");
+
   store.completeOnboarding({
-    visionProfile: { ...store.state.data.visionProfile },
+    visionProfile: {
+      ...store.state.data.visionProfile,
+    },
     identityProfile: {
       ...store.state.data.identityProfile,
-      beliefs: [...store.state.data.identityProfile.beliefs],
+      beliefs: store.state.data.identityProfile.beliefs.length
+        ? [...store.state.data.identityProfile.beliefs]
+        : ["行动创造清晰"],
     },
-    proofRules: store.state.data.proofRules.map((rule) => ({ ...rule })),
-    reminderRules: store.state.data.reminderRules.map((rule) => ({ ...rule })),
+    proofRules: [
+      {
+        id: store.activeProofRules()[0]?.id ?? "rule-onboarding-proof",
+        title: proofTitle.value.trim(),
+        description:
+          proofDescription.value.trim() || "今天完成这条动作，给身份一个真实证据。",
+        cadence: "daily",
+        active: true,
+        sortOrder: 1,
+      },
+    ],
+    reminderRules: [
+      createReminderRule({
+        source: existingDayReminder,
+        kind: "day",
+        time: dayReminderTime.value,
+        label: "白天对齐提醒",
+        message: "暂停 30 秒，确认你现在做的事是否像你定义的那个人。",
+      }),
+      createReminderRule({
+        source: existingNightReminder,
+        kind: "night",
+        time: nightReminderTime.value,
+        label: "夜间复盘提醒",
+        message: "把今天重新整合成明天的燃料，完成你的夜间复盘。",
+      }),
+    ],
   });
 
   uni.showToast({
@@ -429,17 +351,18 @@ function goNextStep() {
   });
 
   setTimeout(() => {
-    goToToday();
+    switchToTab(TODAY_PAGE_PATH);
   }, 180);
 }
 
 onShow(() => {
   store.initialize();
   if (store.state.data.onboardingCompleted) {
-    goToToday();
+    switchToTab(TODAY_PAGE_PATH);
     return;
   }
 
+  hydrateDrafts();
   currentStep.value = detectSuggestedStep();
 });
 </script>
@@ -449,11 +372,8 @@ onShow(() => {
 .onboarding-hero,
 .onboarding-card,
 .field-block,
-.belief-list,
-.rule-list,
-.reminder-list,
-.reminder-row,
-.reminder-row__copy {
+.reminder-pair,
+.reminder-pair__copy {
   display: flex;
   flex-direction: column;
 }
@@ -465,18 +385,14 @@ onShow(() => {
 .onboarding-hero,
 .onboarding-card,
 .field-block,
-.belief-list,
-.rule-list,
-.reminder-list,
-.reminder-row {
+.reminder-pair {
   gap: 18rpx;
 }
 
-.onboarding-hero__title,
-.reminder-row__title {
+.onboarding-hero__title {
   color: #f5f5f5;
-  font-size: 34rpx;
-  line-height: 1.42;
+  font-size: 38rpx;
+  line-height: 1.34;
 }
 
 .onboarding-steps {
@@ -516,40 +432,29 @@ onShow(() => {
   line-height: 1.4;
 }
 
-.field-row,
-.belief-row,
-.reminder-row__meta {
+.onboarding-card__small-textarea {
+  min-height: 136rpx;
+}
+
+.reminder-pair__item {
   display: flex;
+  gap: 18rpx;
   align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: rgba(10, 10, 11, 0.34);
 }
 
-.belief-row {
-  align-items: stretch;
-}
-
-.belief-row__input {
+.reminder-pair__copy {
   flex: 1;
+  gap: 6rpx;
+  min-width: 0;
 }
 
-.onboarding-rule {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: rgba(10, 10, 11, 0.34);
-}
-
-.onboarding-rule__textarea {
-  min-height: 140rpx;
-}
-
-.reminder-row {
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: rgba(10, 10, 11, 0.34);
+.reminder-pair__time {
+  min-width: 132rpx;
+  text-align: center;
 }
 
 .onboarding-footer {

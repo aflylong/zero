@@ -5,6 +5,10 @@
         <SectionLabel>你是谁</SectionLabel>
         <text class="identity-hero__title">{{ statementPreview }}</text>
         <text class="muted-text">{{ antiIdentityPreview }}</text>
+        <view class="identity-hero__actions">
+          <button class="pill-button" @tap="openIdentityEditor">编辑身份</button>
+          <button class="ghost-button" @tap="openIdentityEditor">管理法则</button>
+        </view>
       </GradientHeroCard>
 
       <GlassCard card-class="identity-card">
@@ -23,7 +27,12 @@
       </GlassCard>
 
       <GlassCard card-class="identity-card">
-        <SectionLabel>证明法则摘要</SectionLabel>
+        <view class="identity-card__head">
+          <SectionLabel>证明法则摘要</SectionLabel>
+          <button class="ghost-button identity-card__head-button" @tap="openIdentityEditor">
+            管理
+          </button>
+        </view>
         <text class="identity-card__title">{{ proofSummaryTitle }}</text>
         <view v-if="activeProofRules.length" class="identity-rules">
           <view
@@ -39,27 +48,18 @@
         </view>
         <text v-else class="muted-text">还没有生效中的证明法则，先去编辑页补上一条真实动作。</text>
       </GlassCard>
-
-      <view class="identity-actions">
-        <button class="ghost-button" @tap="openIdentityEditor">打开身份编辑</button>
-        <button
-          v-if="!store.state.data.onboardingCompleted"
-          class="ghost-button"
-          @tap="openOnboarding"
-        >
-          完成初始化
-        </button>
-      </view>
     </view>
   </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
@@ -88,11 +88,12 @@ function openIdentityEditor() {
   });
 }
 
-function openOnboarding() {
-  uni.navigateTo({
-    url: "/pages/onboarding/index",
-  });
-}
+onShow(() => {
+  store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+});
 </script>
 
 <style scoped lang="scss">
@@ -106,7 +107,7 @@ function openOnboarding() {
 }
 
 .identity-page {
-  gap: 36rpx;
+  gap: 26rpx;
 }
 
 .identity-hero,
@@ -123,11 +124,29 @@ function openOnboarding() {
 }
 
 .identity-hero__title {
-  font-size: 54rpx;
+  font-size: 52rpx;
 }
 
 .identity-card__title {
   font-size: 32rpx;
+}
+
+.identity-hero__actions,
+.identity-card__head {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.identity-hero__actions {
+  justify-content: flex-start;
+  padding-top: 4rpx;
+}
+
+.identity-card__head-button {
+  padding: 12rpx 22rpx;
 }
 
 .identity-list__item,
@@ -166,9 +185,4 @@ function openOnboarding() {
   line-height: 1.68;
 }
 
-.identity-actions {
-  display: flex;
-  gap: 16rpx;
-  flex-wrap: wrap;
-}
 </style>

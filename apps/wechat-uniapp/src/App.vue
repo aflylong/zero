@@ -9,11 +9,15 @@ onLaunch(() => {
 });
 
 onShow(() => {
-  store.refreshReminderPrompts();
+  if (store.state.data.onboardingCompleted) {
+    store.refreshReminderPrompts();
+  }
 });
 
 onHide(() => {
-  store.refreshReminderPrompts();
+  if (store.state.data.onboardingCompleted) {
+    store.refreshReminderPrompts();
+  }
 });
 </script>
 <style lang="scss">

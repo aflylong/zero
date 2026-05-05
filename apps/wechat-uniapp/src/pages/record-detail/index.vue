@@ -153,6 +153,7 @@ import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { parseDateKey } from "@/services/date";
+import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderAction } from "@/types/app";
 
@@ -242,6 +243,9 @@ onLoad((query) => {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
 });
 </script>
 

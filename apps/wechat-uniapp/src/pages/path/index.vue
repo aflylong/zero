@@ -2,17 +2,20 @@
   <PageShell tab-key="path">
     <view class="path-page">
       <view class="path-hero">
-        <SectionLabel>愿景</SectionLabel>
+        <view class="path-hero__head">
+          <SectionLabel>愿景</SectionLabel>
+          <button class="ghost-button" @tap="openPathEditor">调整道路</button>
+        </view>
         <text class="path-hero__title">{{ visionPreview }}</text>
       </view>
 
-      <GlassCard card-class="path-card">
+      <view class="path-splits">
         <SectionLabel>为什么必须改变</SectionLabel>
         <text class="body-text">{{ whyChangePreview }}</text>
-        <view class="path-card__divider" />
-        <text class="path-card__meta-label">反愿景</text>
+        <view class="path-splits__divider" />
+        <text class="path-splits__meta-label">反愿景</text>
         <text class="path-card__warning">{{ antiVisionPreview }}</text>
-      </GlassCard>
+      </view>
 
       <GradientHeroCard card-class="path-quest">
         <SectionLabel>当前主线</SectionLabel>
@@ -20,32 +23,25 @@
         <text class="body-text">{{ mainQuestDescription }}</text>
       </GradientHeroCard>
 
-      <GlassCard card-class="path-card">
-        <SectionLabel>方法原文</SectionLabel>
-        <text class="path-card__title">{{ articleTitle }}</text>
-        <text class="muted-text">{{ articleSummary }}</text>
-        <view class="path-actions">
-          <button class="ghost-button" @tap="openArticleReader">沉浸阅读</button>
-          <button class="ghost-button" @tap="openPathEditor">调整道路</button>
-          <button
-            v-if="!store.state.data.onboardingCompleted"
-            class="ghost-button"
-            @tap="openOnboarding"
-          >
-            完成初始化
-          </button>
+      <button class="path-article-row" @tap="openArticleReader">
+        <view class="path-article-row__copy">
+          <SectionLabel>方法原文</SectionLabel>
+          <text class="path-card__title">{{ articleTitle }}</text>
+          <text class="muted-text">{{ articleSummary }}</text>
         </view>
-      </GlassCard>
+        <text class="path-article-row__arrow">›</text>
+      </button>
     </view>
   </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import GlassCard from "@/components/GlassCard.vue";
+import { onShow } from "@dcloudio/uni-app";
 import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { ensureOnboardingReady } from "@/services/navigation";
 import { articleSections, articleTitle } from "@/static/content/article";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -90,30 +86,42 @@ function openPathEditor() {
   });
 }
 
-function openOnboarding() {
-  uni.navigateTo({
-    url: "/pages/onboarding/index",
-  });
-}
+onShow(() => {
+  store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+});
 </script>
 
 <style scoped lang="scss">
 .path-page,
 .path-hero,
 .path-card,
-.path-quest {
+.path-quest,
+.path-splits,
+.path-article-row__copy {
   display: flex;
   flex-direction: column;
 }
 
 .path-page {
-  gap: 36rpx;
+  gap: 26rpx;
 }
 
 .path-hero,
 .path-card,
-.path-quest {
+.path-quest,
+.path-splits,
+.path-article-row__copy {
   gap: 18rpx;
+}
+
+.path-hero__head {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .path-hero__title,
@@ -124,7 +132,7 @@ function openOnboarding() {
 }
 
 .path-hero__title {
-  font-size: 50rpx;
+  font-size: 48rpx;
 }
 
 .path-quest__title,
@@ -132,13 +140,17 @@ function openOnboarding() {
   font-size: 34rpx;
 }
 
-.path-card__divider {
+.path-splits {
+  padding: 4rpx 0;
+}
+
+.path-splits__divider {
   width: 100%;
   height: 1px;
   background: rgba(39, 39, 42, 0.88);
 }
 
-.path-card__meta-label {
+.path-splits__meta-label {
   color: #71717a;
   font-size: 20rpx;
   letter-spacing: 4rpx;
@@ -152,9 +164,25 @@ function openOnboarding() {
   font-style: italic;
 }
 
-.path-actions {
+.path-article-row {
   display: flex;
-  gap: 16rpx;
-  flex-wrap: wrap;
+  gap: 20rpx;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26rpx 0;
+  border-top: 1px solid rgba(39, 39, 42, 0.82);
+  border-bottom: 1px solid rgba(39, 39, 42, 0.82);
+  text-align: left;
+}
+
+.path-article-row__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.path-article-row__arrow {
+  color: #52525b;
+  font-size: 44rpx;
+  line-height: 1;
 }
 </style>

@@ -17,48 +17,51 @@
         <text class="records-hero__copy">{{ streakDescription }}</text>
       </view>
 
-      <GlassCard card-class="records-card">
-        <view class="records-window">
-          <view class="records-window__copy">
-            <SectionLabel>时间窗口</SectionLabel>
-            <text class="records-window__title">{{ windowTitle }}</text>
-            <text class="muted-text">{{ windowRangeLabel }}</text>
-          </view>
-          <view class="records-window__actions">
-            <button
-              class="ghost-button records-window__button"
-              :disabled="!recordWindow.hasPrevWindow"
-              @tap="shiftWindow(-35)"
-            >
-              更早
-            </button>
-            <button
-              class="ghost-button records-window__button"
-              :disabled="!recordWindow.hasNextWindow"
-              @tap="shiftWindow(35)"
-            >
-              更新
-            </button>
-          </view>
-        </view>
-
+      <GlassCard card-class="records-card records-overview">
         <view class="records-metrics">
           <view class="records-metric">
             <text class="records-metric__value">{{ windowSummary.averageAlignment }}%</text>
-            <text class="records-metric__label">窗口平均分</text>
+            <text class="records-metric__label">平均</text>
           </view>
           <view class="records-metric">
             <text class="records-metric__value">{{ windowSummary.completedDays }}/{{ windowSummary.trackedDays }}</text>
-            <text class="records-metric__label">对齐天数</text>
+            <text class="records-metric__label">对齐</text>
           </view>
           <view class="records-metric">
             <text class="records-metric__value">{{ overallSummary.bestStreak }}</text>
-            <text class="records-metric__label">最佳连续</text>
+            <text class="records-metric__label">最佳</text>
           </view>
+        </view>
+
+        <view class="records-summary">
+          <SectionLabel>趋势摘要</SectionLabel>
+          <text class="records-summary__title">{{ trendHeadline }}</text>
+          <text class="muted-text">{{ trendBody }}</text>
         </view>
       </GlassCard>
 
       <GlassCard card-class="records-card">
+        <view class="records-window-compact">
+          <button
+            class="records-window-compact__button"
+            :disabled="!recordWindow.hasPrevWindow"
+            @tap="shiftWindow(-35)"
+          >
+            ‹
+          </button>
+          <view class="records-window-compact__center">
+            <text class="records-window-compact__range">{{ windowRangeLabel }}</text>
+            <text class="records-window-compact__hint">35 天窗口</text>
+          </view>
+          <button
+            class="records-window-compact__button"
+            :disabled="!recordWindow.hasNextWindow"
+            @tap="shiftWindow(35)"
+          >
+            ›
+          </button>
+        </view>
+
         <view class="records-section-head">
           <view class="records-section-head__copy">
             <SectionLabel>35 天热力格</SectionLabel>
@@ -87,15 +90,6 @@
           </view>
         </view>
       </GlassCard>
-
-      <view class="records-summary">
-        <SectionLabel>趋势摘要</SectionLabel>
-        <text class="records-summary__title">{{ trendHeadline }}</text>
-        <text class="muted-text">{{ trendBody }}</text>
-        <button class="ghost-button records-summary__button" @tap="openRecordDetail(todayDateKey)">
-          查看今天的完整记录
-        </button>
-      </view>
     </view>
   </PageShell>
 </template>
@@ -108,6 +102,7 @@ import HeatmapGrid from "@/components/HeatmapGrid.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { parseDateKey } from "@/services/date";
+import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
@@ -133,9 +128,6 @@ const activeHeatmapDate = computed(() =>
   recordWindow.value.endDateKey === todayDateKey.value ? todayDateKey.value : "",
 );
 
-const windowTitle = computed(() =>
-  recordWindow.value.endDateKey === todayDateKey.value ? "当前 35 天" : "历史 35 天窗口",
-);
 const windowRangeLabel = computed(() =>
   `${formatRangeDate(recordWindow.value.startDateKey)} - ${formatRangeDate(recordWindow.value.endDateKey)}`,
 );
@@ -197,6 +189,9 @@ function formatRangeDate(dateKey: string) {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
 });
 </script>
 
@@ -204,7 +199,7 @@ onShow(() => {
 .records-page {
   display: flex;
   flex-direction: column;
-  gap: 34rpx;
+  gap: 26rpx;
 }
 
 .records-hero {
@@ -286,10 +281,9 @@ onShow(() => {
 .records-card {
   display: flex;
   flex-direction: column;
-  gap: 28rpx;
+  gap: 24rpx;
 }
 
-.records-window,
 .records-section-head {
   display: flex;
   gap: 20rpx;
@@ -297,14 +291,12 @@ onShow(() => {
   justify-content: space-between;
 }
 
-.records-window__copy,
 .records-section-head__copy {
   display: flex;
   flex: 1;
   flex-direction: column;
 }
 
-.records-window__title,
 .records-section-head__title,
 .records-summary__title {
   color: #f5f5f5;
@@ -312,29 +304,67 @@ onShow(() => {
   line-height: 1.4;
 }
 
-.records-window__actions {
-  display: flex;
-  gap: 14rpx;
+.records-overview {
+  gap: 26rpx;
 }
 
-.records-window__button,
-.records-summary__button {
-  align-self: flex-start;
+.records-window-compact {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6rpx 0 2rpx;
+}
+
+.records-window-compact__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border: 1px solid rgba(63, 63, 70, 0.64);
+  border-radius: 999rpx;
+  color: #d4d4d8;
+  font-size: 46rpx;
+  line-height: 1;
+}
+
+.records-window-compact__center {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.records-window-compact__range {
+  color: #f5f5f5;
+  font-size: 30rpx;
+  line-height: 1.3;
+}
+
+.records-window-compact__hint {
+  color: #71717a;
+  font-size: 20rpx;
+  line-height: 1.4;
 }
 
 .records-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .records-metric {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
-  padding: 24rpx 20rpx;
-  border-radius: 20rpx;
-  background: rgba(10, 10, 11, 0.42);
+  gap: 8rpx;
+  padding: 0 12rpx;
+  border-left: 1px solid rgba(39, 39, 42, 0.82);
+}
+
+.records-metric:first-child {
+  border-left: 0;
 }
 
 .records-metric__value {

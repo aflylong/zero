@@ -1,24 +1,31 @@
 <template>
   <PageShell tab-key="today" title="今日">
     <view class="today-page">
-      <GlassCard v-if="!onboardingCompleted" card-class="today-banner">
-        <SectionLabel>还差一步</SectionLabel>
-        <text class="today-banner__title">先把系统初始化好，今日页才会完整运转。</text>
-        <text class="muted-text">愿景、身份、证明法则和提醒时间都会直接影响今天的执行面。</text>
-        <button class="ghost-button today-banner__button" @tap="openOnboarding">继续初始化</button>
-      </GlassCard>
-
       <view class="today-identity">
         <SectionLabel>你是谁</SectionLabel>
         <text class="hero-title today-identity__title">{{ identityProfile.statement }}</text>
-        <text class="body-text today-identity__body">{{ identityProfile.antiIdentityText }}</text>
+        <text class="today-identity__body">不回到：{{ identityProfile.antiIdentityText }}</text>
       </view>
 
       <GradientHeroCard card-class="today-quest">
         <SectionLabel>今日主线</SectionLabel>
         <text class="page-title today-quest__title">{{ todayPlan.mainQuestTitle }}</text>
         <text class="body-text">{{ todayPlan.mainQuestDescription }}</text>
+        <view class="today-primary-actions">
+          <button class="pill-button" @tap="openTodayNote">写观察</button>
+          <button class="ghost-button" @tap="openNightReview">进入复盘</button>
+        </view>
+        <button class="today-note-line" @tap="openTodayNote">
+          <text class="today-note-line__label">今日观察</text>
+          <text class="today-note-line__text">{{ notePreview }}</text>
+        </button>
       </GradientHeroCard>
+
+      <ReminderPrompt
+        v-if="primaryPrompt"
+        :prompt="primaryPrompt"
+        @action="handleReminderAction"
+      />
 
       <GlassCard card-class="today-section">
         <view class="today-section__head">
@@ -48,7 +55,7 @@
         </view>
       </GlassCard>
 
-      <GlassCard card-class="today-section">
+      <GlassCard card-class="today-section today-progress">
         <view class="today-section__head">
           <view class="today-section__copy">
             <SectionLabel>今日进度</SectionLabel>
@@ -63,27 +70,7 @@
         <text class="muted-text">{{ alignmentHint }}</text>
       </GlassCard>
 
-      <GlassCard card-class="today-section">
-        <view class="today-section__head">
-          <view class="today-section__copy">
-            <SectionLabel>今日观察</SectionLabel>
-            <text class="today-section__title">用一句话记录今天的真实状态</text>
-          </view>
-        </view>
-
-        <text class="today-note__preview">{{ notePreview }}</text>
-        <view class="today-links">
-          <button class="ghost-button" @tap="openTodayNote">打开观察页</button>
-        </view>
-      </GlassCard>
-
-      <ReminderPrompt
-        v-if="primaryPrompt"
-        :prompt="primaryPrompt"
-        @action="handleReminderAction"
-      />
-
-      <GlassCard v-else card-class="today-section">
+      <GlassCard v-if="!primaryPrompt" card-class="today-section">
         <view class="today-section__head">
           <view class="today-section__copy">
             <SectionLabel>提醒</SectionLabel>
@@ -93,16 +80,6 @@
 
         <text class="muted-text">{{ reminderStatusText }}</text>
         <view class="today-links">
-          <button class="ghost-button" @tap="openReminderSettings">提醒设置</button>
-        </view>
-      </GlassCard>
-
-      <GlassCard card-class="today-section today-review">
-        <SectionLabel>夜间复盘</SectionLabel>
-        <text class="today-section__title">晚上把今天整合成明天的燃料。</text>
-        <text class="muted-text">评分、赢点、偏离点和明日修正都在独立复盘页完成。</text>
-        <view class="today-links">
-          <button class="pill-button today-review__button" @tap="openNightReview">进入夜间复盘</button>
           <button class="ghost-button" @tap="openReminderSettings">提醒设置</button>
         </view>
       </GlassCard>
@@ -118,13 +95,13 @@ import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import ReminderPrompt from "@/components/ReminderPrompt.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderAction } from "@/types/app";
 
 const store = useAppStore();
 
 const identityProfile = computed(() => store.state.data.identityProfile);
-const onboardingCompleted = computed(() => store.state.data.onboardingCompleted);
 const todayPlan = computed(() => store.today.value.plan);
 const todaySnapshot = computed(() => store.today.value.snapshot);
 const proofRules = computed(() => store.activeProofRules());
@@ -196,10 +173,6 @@ function handleReminderAction(ruleId: string, action: ReminderAction) {
   }
 }
 
-function openOnboarding() {
-  uni.navigateTo({ url: "/pages/onboarding/index" });
-}
-
 function openNightReview() {
   uni.navigateTo({ url: "/pages/night-review/index" });
 }
@@ -214,6 +187,10 @@ function openTodayNote() {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+
   store.refreshReminderPrompts();
 });
 </script>
@@ -222,10 +199,9 @@ onShow(() => {
 .today-page {
   display: flex;
   flex-direction: column;
-  gap: 36rpx;
+  gap: 26rpx;
 }
 
-.today-banner,
 .today-section,
 .today-review {
   display: flex;
@@ -233,34 +209,28 @@ onShow(() => {
   gap: 18rpx;
 }
 
-.today-banner {
-  border-color: rgba(52, 211, 153, 0.18);
-  background: rgba(6, 95, 70, 0.12);
-}
-
-.today-banner__title,
 .today-section__title {
   color: #f5f5f5;
   font-size: 34rpx;
   line-height: 1.38;
 }
 
-.today-banner__button {
-  align-self: flex-start;
-}
-
 .today-identity {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .today-identity__title {
   max-width: 620rpx;
+  font-size: 56rpx;
 }
 
 .today-identity__body {
   max-width: 620rpx;
+  color: #71717a;
+  font-size: 24rpx;
+  line-height: 1.62;
 }
 
 .today-quest {
@@ -270,7 +240,35 @@ onShow(() => {
 }
 
 .today-quest__title {
-  font-size: 42rpx;
+  font-size: 40rpx;
+}
+
+.today-primary-actions {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+  padding-top: 4rpx;
+}
+
+.today-note-line {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 22rpx 0 0;
+  border-top: 1px solid rgba(39, 39, 42, 0.72);
+  text-align: left;
+}
+
+.today-note-line__label {
+  color: #34d399;
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+
+.today-note-line__text {
+  color: #d4d4d8;
+  font-size: 25rpx;
+  line-height: 1.56;
 }
 
 .today-section__head {
@@ -303,7 +301,7 @@ onShow(() => {
   display: flex;
   gap: 20rpx;
   align-items: flex-start;
-  padding: 28rpx 30rpx;
+  padding: 24rpx 26rpx;
   border: 1px solid rgba(39, 39, 42, 0.72);
   border-radius: 24rpx;
   background: rgba(24, 24, 27, 0.36);
@@ -353,10 +351,8 @@ onShow(() => {
   line-height: 1.58;
 }
 
-.today-note__preview {
-  color: #d4d4d8;
-  font-size: 28rpx;
-  line-height: 1.72;
+.today-progress {
+  gap: 16rpx;
 }
 
 .today-links {

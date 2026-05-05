@@ -77,7 +77,7 @@ input {
 }
 
 .page-shell__content {
-  padding: 40rpx 48rpx calc(180rpx + env(safe-area-inset-bottom));
+  padding: 32rpx 48rpx calc(168rpx + env(safe-area-inset-bottom));
 }
 
 .page-shell__content--no-tab {
@@ -106,7 +106,7 @@ input {
 }
 
 .section-gap {
-  margin-bottom: 40rpx;
+  margin-bottom: 28rpx;
 }
 
 .section-label {
@@ -140,14 +140,14 @@ input {
 }
 
 .glass-card {
-  padding: 36rpx;
+  padding: 30rpx;
   border: 1px solid $card-border;
   border-radius: 24rpx;
   background: $card-bg;
 }
 
 .hero-card {
-  padding: 40rpx;
+  padding: 32rpx;
   border: 1px solid $accent-border;
   border-radius: 32rpx;
   background: linear-gradient(145deg, rgba(6, 78, 59, 0.3), rgba(17, 24, 39, 0.2));

@@ -61,6 +61,12 @@
             <text>推进</text>
           </view>
         </view>
+
+        <view class="night-inline-actions">
+          <button class="pill-button night-inline-actions__button" @tap="handlePrimaryAction">
+            下一步
+          </button>
+        </view>
       </GlassCard>
 
       <GlassCard v-else-if="currentStep === 1" card-class="night-card">
@@ -84,6 +90,15 @@
             placeholder="你在哪些时刻被惯性、分心或逃避带偏了？"
             @input="handleTextInput('missesText', $event)"
           />
+        </view>
+
+        <view class="night-inline-actions">
+          <button class="ghost-button night-inline-actions__button" @tap="handleSecondaryAction">
+            上一步
+          </button>
+          <button class="pill-button night-inline-actions__button" @tap="handlePrimaryAction">
+            下一步
+          </button>
         </view>
       </GlassCard>
 
@@ -113,6 +128,15 @@
         <text class="night-status" :class="{ 'night-status--dirty': dirty }">
           {{ dirty ? "有未保存修改" : "表单已同步到当前草稿" }}
         </text>
+
+        <view class="night-inline-actions">
+          <button class="ghost-button night-inline-actions__button" @tap="handleSecondaryAction">
+            上一步
+          </button>
+          <button class="pill-button night-inline-actions__button" @tap="handlePrimaryAction">
+            保存复盘
+          </button>
+        </view>
       </GlassCard>
     </view>
 
@@ -135,7 +159,7 @@ import { onHide, onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { switchToTab } from "@/services/navigation";
+import { ensureOnboardingReady, switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 type UniValueEvent = Event & {
@@ -284,6 +308,10 @@ function handleBack() {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+
   store.refreshReminderPrompts();
   if (!dirty.value) {
     hydrateForm();
@@ -386,7 +414,8 @@ onHide(() => {
 }
 
 .night-score-block__head,
-.night-footer {
+.night-footer,
+.night-inline-actions {
   display: flex;
   gap: 18rpx;
   align-items: center;
@@ -425,5 +454,15 @@ onHide(() => {
 
 .night-footer__button {
   justify-content: center;
+}
+
+.night-inline-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 4rpx;
+}
+
+.night-inline-actions__button {
+  min-width: 180rpx;
 }
 </style>

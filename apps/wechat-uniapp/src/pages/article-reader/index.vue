@@ -17,8 +17,22 @@
 
         <view class="reader-header">
           <SectionLabel>{{ currentSection.kicker }}</SectionLabel>
-          <text class="reader-header__chapter">第 {{ currentIndex + 1 }} 章</text>
-          <text class="reader-header__title">{{ currentSection.title }}</text>
+          <view class="reader-header__info">
+            <button
+              class="reader-header__prev"
+              :disabled="!hasPrevSection"
+              @tap="openPrevSection"
+            >
+              上一章
+            </button>
+            <text class="reader-header__chapter">第 {{ currentIndex + 1 }} 章</text>
+          </view>
+          <view class="reader-header__title-row">
+            <text class="reader-header__title">{{ currentSection.title }}</text>
+            <button class="reader-header__read" @tap="markCurrentAsRead">
+              {{ isCurrentCompleted ? "已读" : "标记已读" }}
+            </button>
+          </view>
           <text class="body-text">{{ currentSection.summary }}</text>
         </view>
 
@@ -43,17 +57,7 @@
 
       <template #footer>
         <view class="reader-footer">
-          <button
-            class="ghost-button reader-footer__button"
-            :disabled="!hasPrevSection"
-            @tap="openPrevSection"
-          >
-            上一章
-          </button>
-          <button class="pill-button reader-footer__button" @tap="markCurrentAsRead">
-            {{ isCurrentCompleted ? "已标记" : "标记已读" }}
-          </button>
-          <button class="ghost-button reader-footer__button" @tap="handleNextAction">
+          <button class="pill-button reader-footer__button" @tap="handleNextAction">
             {{ hasNextSection ? "下一章" : "完成阅读" }}
           </button>
         </view>
@@ -110,7 +114,7 @@ import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { switchToTab } from "@/services/navigation";
+import { ensureOnboardingReady, switchToTab } from "@/services/navigation";
 import { articleSections, articleSourceUrl, articleTitle } from "@/static/content/article";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ArticleParagraph } from "@/types/app";
@@ -209,6 +213,10 @@ function copySourceLink() {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+
   const currentId = store.state.data.articleProgress.currentSectionId;
   if (currentId) {
     store.openArticleSection(currentId);
@@ -256,11 +264,44 @@ onShow(() => {
   gap: 18rpx;
 }
 
+.reader-header__info,
+.reader-header__title-row {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reader-header__title-row {
+  align-items: flex-start;
+}
+
 .reader-header__title,
 .reader-catalog__title {
   color: #f5f5f5;
   font-size: 42rpx;
   line-height: 1.32;
+}
+
+.reader-header__title {
+  flex: 1;
+}
+
+.reader-header__prev,
+.reader-header__read {
+  padding: 12rpx 20rpx;
+  border: 1px solid rgba(63, 63, 70, 0.64);
+  border-radius: 999rpx;
+  color: #d4d4d8;
+  font-size: 22rpx;
+  line-height: 1.3;
+}
+
+.reader-header__read {
+  border-color: rgba(16, 185, 129, 0.24);
+  background: rgba(6, 95, 70, 0.18);
+  color: #d1fae5;
+  flex-shrink: 0;
 }
 
 .reader-accent {
@@ -310,14 +351,16 @@ onShow(() => {
 }
 
 .reader-footer {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12rpx;
+  display: flex;
 }
 
 .reader-footer__button,
 .reader-topbar__button {
   justify-content: center;
+}
+
+.reader-footer__button {
+  width: 100%;
 }
 
 .reader-catalog {

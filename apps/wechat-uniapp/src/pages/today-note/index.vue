@@ -32,19 +32,12 @@
         <text class="today-note-card__hint">
           {{ dirty ? "有未保存修改" : "当前内容已同步到本地存储" }}
         </text>
+
+        <button class="pill-button today-note-card__save" @tap="saveNote">
+          保存一句话
+        </button>
       </GlassCard>
     </view>
-
-    <template #footer>
-      <view class="today-note-footer">
-        <button class="ghost-button today-note-footer__button" @tap="saveNote">
-          先保存
-        </button>
-        <button class="pill-button today-note-footer__button" @tap="handleBack">
-          保存并返回
-        </button>
-      </view>
-    </template>
   </PageShell>
 </template>
 
@@ -54,7 +47,7 @@ import { onHide, onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { switchToTab } from "@/services/navigation";
+import { ensureOnboardingReady, switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 type UniValueEvent = Event & {
@@ -105,6 +98,10 @@ function handleBack() {
 
 onShow(() => {
   store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+
   if (!dirty.value) {
     hydrate();
   }
@@ -157,13 +154,7 @@ onHide(() => {
   min-height: 340rpx;
 }
 
-.today-note-footer {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
-}
-
-.today-note-footer__button {
-  justify-content: center;
+.today-note-card__save {
+  align-self: flex-start;
 }
 </style>

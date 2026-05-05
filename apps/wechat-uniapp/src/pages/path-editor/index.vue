@@ -81,10 +81,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { switchToTab } from "@/services/navigation";
+import { ensureOnboardingReady, switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
@@ -126,6 +127,13 @@ function goBack() {
 function openArticleReader() {
   uni.navigateTo({ url: "/pages/article-reader/index" });
 }
+
+onShow(() => {
+  store.initialize();
+  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
+    return;
+  }
+});
 </script>
 
 <style scoped lang="scss">
