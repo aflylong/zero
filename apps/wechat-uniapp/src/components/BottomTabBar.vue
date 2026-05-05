@@ -21,6 +21,8 @@
 </template>
 
 <script setup lang="ts">
+import { switchToTab } from "@/services/navigation";
+
 defineProps<{
   active: "today" | "path" | "records" | "identity";
 }>();
@@ -33,7 +35,7 @@ const tabs = [
 ] as const;
 
 function handleTap(path: string) {
-  uni.reLaunch({ url: path });
+  switchToTab(path);
 }
 </script>
 

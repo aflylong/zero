@@ -1,0 +1,180 @@
+.tabbar {
+  position: relative;
+  border-top: 1px solid rgba(24, 24, 27, 1);
+  background: #000000;
+}
+
+.tabbar__frame {
+  padding: 10rpx 16rpx 0;
+}
+
+.tabbar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.tabbar__item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 0 18rpx;
+  color: #52525b;
+}
+
+.tabbar__item--active {
+  color: #34d399;
+}
+
+.tabbar__label {
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.tabbar__icon {
+  position: relative;
+  width: 34rpx;
+  height: 34rpx;
+}
+
+.tabbar__today-v,
+.tabbar__today-h,
+.tabbar__today-core,
+.tabbar__path-frame,
+.tabbar__path-core,
+.tabbar__records-frame,
+.tabbar__records-line,
+.tabbar__identity-v,
+.tabbar__identity-h,
+.tabbar__identity-x {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.tabbar__today-v {
+  top: 50%;
+  left: 50%;
+  width: 6rpx;
+  height: 42rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.tabbar__today-h {
+  top: 50%;
+  left: 50%;
+  width: 42rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.tabbar__today-core {
+  top: 50%;
+  left: 50%;
+  width: 18rpx;
+  height: 18rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 999rpx;
+  background: #000000;
+  transform: translate(-50%, -50%);
+}
+
+.tabbar__path-frame {
+  top: 50%;
+  left: 50%;
+  width: 24rpx;
+  height: 24rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 8rpx;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tabbar__path-core {
+  top: 50%;
+  left: 50%;
+  width: 7rpx;
+  height: 18rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%) rotate(30deg);
+}
+
+.tabbar__records-frame {
+  top: 7rpx;
+  left: 5rpx;
+  width: 24rpx;
+  height: 22rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 8rpx;
+}
+
+.tabbar__records-line {
+  height: 3rpx;
+  background: currentColor;
+}
+
+.tabbar__records-line--main {
+  top: 12rpx;
+  left: 10rpx;
+  width: 14rpx;
+}
+
+.tabbar__records-line--left {
+  top: 7rpx;
+  left: 2rpx;
+  width: 3rpx;
+  height: 3rpx;
+}
+
+.tabbar__records-line--right {
+  top: 7rpx;
+  right: 2rpx;
+  width: 3rpx;
+  height: 3rpx;
+}
+
+.tabbar__records-line--bottom {
+  top: 20rpx;
+  left: 10rpx;
+  width: 14rpx;
+}
+
+.tabbar__identity-v {
+  top: 50%;
+  left: 50%;
+  width: 6rpx;
+  height: 28rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.tabbar__identity-h {
+  top: 50%;
+  left: 50%;
+  width: 28rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.tabbar__identity-x {
+  top: 50%;
+  left: 50%;
+  width: 28rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tabbar__safe {
+  height: calc(env(safe-area-inset-bottom) + 12rpx);
+}

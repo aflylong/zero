@@ -110,6 +110,7 @@ import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { switchToTab } from "@/services/navigation";
 import { articleSections, articleSourceUrl, articleTitle } from "@/static/content/article";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ArticleParagraph } from "@/types/app";
@@ -190,7 +191,7 @@ function goBack() {
     return;
   }
 
-  uni.reLaunch({ url: "/pages/path/index" });
+  switchToTab("/pages/path/index");
 }
 
 function copySourceLink() {

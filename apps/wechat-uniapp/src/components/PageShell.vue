@@ -30,7 +30,7 @@
         </view>
       </view>
     </view>
-    <BottomTabBar v-if="tabKey" :active="tabKey" />
+    <BottomTabBar v-if="shouldRenderBottomTabBar && tabKey" :active="tabKey" />
   </view>
 </template>
 
@@ -75,6 +75,19 @@ const topbarModeForComponent = computed<"tab" | "secondary">(() =>
   resolvedTopbarMode.value === "secondary" ? "secondary" : "tab",
 );
 const hasFooter = computed(() => Boolean(slots.footer));
+const shouldRenderBottomTabBar = computed(() => {
+  if (!props.tabKey) {
+    return false;
+  }
+
+  // #ifdef MP-WEIXIN
+  return false;
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  return true;
+  // #endif
+});
 const contentClasses = computed(() => [
   props.contentClass,
   {

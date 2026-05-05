@@ -84,6 +84,7 @@ import { computed } from "vue";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 const store = useAppStore();
@@ -119,7 +120,7 @@ function goBack() {
     return;
   }
 
-  uni.reLaunch({ url: "/pages/path/index" });
+  switchToTab("/pages/path/index");
 }
 
 function openArticleReader() {

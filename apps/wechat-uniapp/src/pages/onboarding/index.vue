@@ -228,6 +228,7 @@ import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ProofRule, ReminderRule } from "@/types/app";
 
@@ -395,7 +396,7 @@ function goPrevStep() {
 }
 
 function goToToday() {
-  uni.reLaunch({ url: "/pages/today/index" });
+  switchToTab("/pages/today/index");
 }
 
 function goNextStep() {

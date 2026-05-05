@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { isTabPage, switchToTab } from "@/services/navigation";
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -102,6 +103,11 @@ function handleBack() {
   }
 
   if (props.backUrl) {
+    if (isTabPage(props.backUrl)) {
+      switchToTab(props.backUrl);
+      return;
+    }
+
     uni.reLaunch({ url: props.backUrl });
   }
 }

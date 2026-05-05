@@ -129,6 +129,7 @@ import { computed } from "vue";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ProofRule } from "@/types/app";
 
@@ -191,7 +192,7 @@ function goBack() {
     return;
   }
 
-  uni.reLaunch({ url: "/pages/identity/index" });
+  switchToTab("/pages/identity/index");
 }
 </script>
 

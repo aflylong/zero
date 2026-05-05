@@ -79,5 +79,32 @@
     "backgroundColorTop": "#000000",
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "Self Improvement"
+  },
+  // #ifdef MP-WEIXIN
+  "tabBar": {
+    "color": "#52525b",
+    "selectedColor": "#34d399",
+    "backgroundColor": "#000000",
+    "borderStyle": "black",
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/today/index",
+        "text": "今日"
+      },
+      {
+        "pagePath": "pages/path/index",
+        "text": "道路"
+      },
+      {
+        "pagePath": "pages/records/index",
+        "text": "记录"
+      },
+      {
+        "pagePath": "pages/identity/index",
+        "text": "身份"
+      }
+    ]
   }
+  // #endif
 }

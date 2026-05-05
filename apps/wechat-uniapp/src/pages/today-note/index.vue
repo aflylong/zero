@@ -54,6 +54,7 @@ import { onHide, onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 
 type UniValueEvent = Event & {
@@ -99,7 +100,7 @@ function handleBack() {
     return;
   }
 
-  uni.reLaunch({ url: "/pages/today/index" });
+  switchToTab("/pages/today/index");
 }
 
 onShow(() => {
