@@ -70,6 +70,44 @@
         </view>
       </GlassCard>
 
+      <GlassCard v-else-if="currentStep === 2" card-class="onboarding-card">
+        <view class="field-block">
+          <text class="field-label">一年目标 · 主线任务</text>
+          <text class="muted-text">一年后你必须看到什么变化,才算真的打破了旧模式?</text>
+          <input
+            v-model="yearGoal"
+            class="input-shell"
+            maxlength="32"
+            placeholder="例如:用 365 天彻底重建日常系统"
+          />
+          <textarea
+            v-model="yearGoalDescription"
+            class="textarea-shell onboarding-card__small-textarea"
+            maxlength="200"
+            auto-height
+            placeholder="一年后什么必须为真,你才会承认自己赢了?"
+          />
+        </view>
+
+        <view class="field-block">
+          <text class="field-label">一月项目 · Boss 战</text>
+          <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
+          <input
+            v-model="monthProject"
+            class="input-shell"
+            maxlength="32"
+            placeholder="例如:连续 30 天跑通完整闭环"
+          />
+          <textarea
+            v-model="monthProjectDescription"
+            class="textarea-shell onboarding-card__small-textarea"
+            maxlength="160"
+            auto-height
+            placeholder="做完这件事,你会拿到什么经验值?"
+          />
+        </view>
+      </GlassCard>
+
       <GlassCard v-else card-class="onboarding-card">
         <view class="field-block">
           <text class="field-label">今天先做什么</text>
@@ -84,7 +122,7 @@
             class="textarea-shell onboarding-card__small-textarea"
             maxlength="120"
             auto-height
-            placeholder="可选：补一句判断标准，例如完成到什么程度算完成。"
+            placeholder="可选:补一句判断标准。"
           />
         </view>
 
@@ -159,18 +197,23 @@ const nightReminderTime = ref("21:30");
 const steps = [
   {
     short: "方向",
-    title: "先写清楚你要去哪里，以及你不要回到哪里。",
-    description: "这一步只定方向，不做长篇设置。",
+    title: "先写清楚你要去哪里,以及你不要回到哪里。",
+    description: "这一步只定方向,不做长篇设置。",
   },
   {
     short: "身份",
     title: "用一句话决定你今天要按什么身份行动。",
-    description: "身份句负责拉齐行为，反身份负责阻止你退回旧版本。",
+    description: "身份句负责拉齐行为,反身份负责阻止你退回旧版本。",
+  },
+  {
+    short: "目标",
+    title: "把一年目标和这个月的项目说清楚。",
+    description: "原文里这叫主线任务和 Boss 战。一年定方向,一月定里程碑。",
   },
   {
     short: "启动",
-    title: "只设置今天第一条证明动作和两个提醒时间。",
-    description: "先让系统跑起来，后续再到道路和身份页细调。",
+    title: "设置今天第一条证明动作和提醒时间。",
+    description: "先让系统跑起来,后续再到道路和身份页细调。",
   },
 ] as const;
 
@@ -197,6 +240,26 @@ const antiIdentityText = computed({
 const progressPercent = computed(() => ((currentStep.value + 1) / steps.length) * 100);
 const stepTitle = computed(() => steps[currentStep.value]?.title ?? steps[0].title);
 const stepDescription = computed(() => steps[currentStep.value]?.description ?? steps[0].description);
+const yearGoal = computed({
+  get: () => store.state.data.visionProfile.yearGoal,
+  set: (value: string) => store.updateVisionProfile({ yearGoal: value }),
+});
+
+const yearGoalDescription = computed({
+  get: () => store.state.data.visionProfile.yearGoalDescription,
+  set: (value: string) => store.updateVisionProfile({ yearGoalDescription: value }),
+});
+
+const monthProject = computed({
+  get: () => store.state.data.visionProfile.monthProject,
+  set: (value: string) => store.updateVisionProfile({ monthProject: value }),
+});
+
+const monthProjectDescription = computed({
+  get: () => store.state.data.visionProfile.monthProjectDescription,
+  set: (value: string) => store.updateVisionProfile({ monthProjectDescription: value }),
+});
+
 const canProceed = computed(() => {
   if (currentStep.value === 0) {
     return Boolean(visionText.value.trim() && antiVisionText.value.trim());
@@ -204,6 +267,10 @@ const canProceed = computed(() => {
 
   if (currentStep.value === 1) {
     return Boolean(identityStatement.value.trim() && antiIdentityText.value.trim());
+  }
+
+  if (currentStep.value === 2) {
+    return Boolean(yearGoal.value.trim() && monthProject.value.trim());
   }
 
   return Boolean(proofTitle.value.trim() && dayReminderTime.value && nightReminderTime.value);
@@ -259,22 +326,15 @@ function hydrateDrafts() {
     store.state.data.reminderRules.find((rule) => rule.kind === "night") ??
     null;
 
-  proofTitle.value = activeRule?.title ?? "完成一个今天最关键的动作";
-  proofDescription.value = activeRule?.description ?? "让它小到今天一定能真实完成。";
+  proofTitle.value = activeRule?.title ?? "";
+  proofDescription.value = activeRule?.description ?? "";
   dayReminderTime.value = dayReminder ? formatReminder(dayReminder.hour, dayReminder.minute) : "11:30";
   nightReminderTime.value = nightReminder ? formatReminder(nightReminder.hour, nightReminder.minute) : "21:30";
 }
 
 function detectSuggestedStep() {
-  if (!visionText.value.trim() || !antiVisionText.value.trim()) {
-    return 0;
-  }
-
-  if (!identityStatement.value.trim() || !antiIdentityText.value.trim()) {
-    return 1;
-  }
-
-  return 2;
+  // 永远从第一步开始,不替用户跳步。
+  return 0;
 }
 
 function handleDayTimeChange(event: UniValueEvent) {
@@ -312,16 +372,13 @@ function goNextStep() {
     },
     identityProfile: {
       ...store.state.data.identityProfile,
-      beliefs: store.state.data.identityProfile.beliefs.length
-        ? [...store.state.data.identityProfile.beliefs]
-        : ["行动创造清晰"],
+      beliefs: [...store.state.data.identityProfile.beliefs],
     },
     proofRules: [
       {
         id: store.activeProofRules()[0]?.id ?? "rule-onboarding-proof",
         title: proofTitle.value.trim(),
-        description:
-          proofDescription.value.trim() || "今天完成这条动作，给身份一个真实证据。",
+        description: proofDescription.value.trim(),
         cadence: "daily",
         active: true,
         sortOrder: 1,

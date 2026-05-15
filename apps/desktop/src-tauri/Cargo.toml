@@ -1,0 +1,28 @@
+[package]
+name = "guiling-desktop"
+version = "0.1.0"
+description = "归零 RE:ZERO — desktop app"
+authors = ["GuiLing Team"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "guiling_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# This feature is used for production builds or when a dev server is not specified,
+# DO NOT REMOVE!
+custom-protocol = ["tauri/custom-protocol"]

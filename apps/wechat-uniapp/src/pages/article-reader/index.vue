@@ -58,7 +58,7 @@
       <template #footer>
         <view class="reader-footer">
           <button class="pill-button reader-footer__button" @tap="handleNextAction">
-            {{ hasNextSection ? "下一章" : "完成阅读" }}
+            {{ nextButtonLabel }}
           </button>
         </view>
       </template>
@@ -138,6 +138,11 @@ const isCurrentCompleted = computed(() =>
 );
 const hasPrevSection = computed(() => currentIndex.value > 0);
 const hasNextSection = computed(() => currentIndex.value < totalSections - 1);
+const nextButtonLabel = computed(() => {
+  if (hasNextSection.value) return "下一章";
+  if (!store.state.data.onboardingCompleted) return "开始设置你的系统";
+  return "完成阅读";
+});
 
 function paragraphClass(type: ArticleParagraph["type"]) {
   return {
@@ -180,12 +185,18 @@ function handleNextAction() {
     store.markArticleSectionRead(currentSection.value.id);
   }
 
-  if (!hasNextSection.value) {
-    goBack();
+  if (hasNextSection.value) {
+    store.openArticleSection(sections[currentIndex.value + 1].id);
     return;
   }
 
-  store.openArticleSection(sections[currentIndex.value + 1].id);
+  // 最后一章读完:还没完成 onboarding 就引导去设置
+  if (!store.state.data.onboardingCompleted) {
+    uni.redirectTo({ url: "/pages/onboarding/index" });
+    return;
+  }
+
+  goBack();
 }
 
 function goBack() {

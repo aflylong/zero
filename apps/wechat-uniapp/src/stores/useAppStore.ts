@@ -16,6 +16,8 @@ import type {
   AppData,
   DailyPlan,
   DailySnapshot,
+  GoalRecord,
+  GoalStatus,
   IdentityProfile,
   NightReview,
   OnboardingPayload,
@@ -31,103 +33,28 @@ import type {
 } from "@/types/app";
 
 const DEFAULT_VISION_PROFILE: VisionProfile = {
-  visionText:
-    "建立一个自由、有影响力、真实连接的人生。每天醒来都带着能量，完成关键行动，也把时间留给真正重要的人。",
-  antiVisionText:
-    "我不想继续做那个拖延、等待完美时机、让分心和恐惧接管决定的人。",
-  whyChangeText:
-    "因为我已经厌倦了知道很多道理却没有把自己真正活出来。我需要一个每天都会运行的系统，而不是一次性的情绪波动。",
-  mainQuestTitle: "7天重塑系统",
-  mainQuestDescription:
-    "连续 7 天完成身份证明、白天提醒回应和夜间复盘，让改变从口号变成轨迹。",
+  visionText: "",
+  antiVisionText: "",
+  whyChangeText: "",
+  yearGoal: "",
+  yearGoalDescription: "",
+  monthProject: "",
+  monthProjectDescription: "",
+  monthProjectDeadline: null,
+  constraints: [],
+  mainQuestTitle: "",
+  mainQuestDescription: "",
 };
 
 const DEFAULT_IDENTITY_PROFILE: IdentityProfile = {
-  statement: "我是毫不犹豫采取大量行动的人",
-  antiIdentityText:
-    "那个拖延、等待完美时机、让恐惧主导决定、只会谈论改变却迟迟不行动的人。",
-  beliefs: [
-    "行动创造清晰",
-    "不适即成长",
-    "我由所做之事定义，而非所想之事",
-    "恐惧经常指向真正重要的东西",
-    "每日小行动会累积成身份",
-  ],
+  statement: "",
+  antiIdentityText: "",
+  beliefs: [],
 };
 
-const DEFAULT_PROOF_RULES: ProofRule[] = [
-  {
-    id: "rule-act-fast",
-    title: "决定后 5 分钟内开始行动",
-    description: "别把重要的动作留给“等会儿”。",
-    cadence: "daily",
-    active: true,
-    sortOrder: 1,
-  },
-  {
-    id: "rule-morning-train",
-    title: "在上午完成一段锻炼",
-    description: "用身体状态证明你不是被惯性拖着走。",
-    cadence: "daily",
-    active: true,
-    sortOrder: 2,
-  },
-  {
-    id: "rule-meaningful-help",
-    title: "做一件帮助他人的事",
-    description: "哪怕很小，也要真实发生。",
-    cadence: "daily",
-    active: true,
-    sortOrder: 3,
-  },
-  {
-    id: "rule-cut-distraction",
-    title: "拒绝一件明显分心的事",
-    description: "把“不是现在”说出口。",
-    cadence: "daily",
-    active: true,
-    sortOrder: 4,
-  },
-];
+const DEFAULT_PROOF_RULES: ProofRule[] = [];
 
-const DEFAULT_REMINDER_RULES: ReminderRule[] = [
-  {
-    id: "reminder-day-1",
-    kind: "day",
-    label: "中午对齐提醒",
-    hour: 11,
-    minute: 30,
-    enabled: true,
-    deliveryMode: "in-app",
-    subscriptionStatus: "pending",
-    message: "暂停 30 秒，确认你现在做的事是否像你定义的那个人。",
-    snoozedUntil: null,
-  },
-  {
-    id: "reminder-day-2",
-    kind: "day",
-    label: "下午纠偏提醒",
-    hour: 16,
-    minute: 30,
-    enabled: true,
-    deliveryMode: "in-app",
-    subscriptionStatus: "pending",
-    message: "挑一个最小但真实的修正动作，现在就做。",
-    snoozedUntil: null,
-  },
-  {
-    id: "reminder-night-1",
-    kind: "night",
-    label: "夜间复盘提醒",
-    hour: 21,
-    minute: 30,
-    enabled: true,
-    deliveryMode: "in-app",
-    subscriptionStatus: "pending",
-    message: "把今天重新整合成明天的燃料，完成你的夜间复盘。",
-    snoozedUntil: null,
-  },
-];
+const DEFAULT_REMINDER_RULES: ReminderRule[] = [];
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -187,6 +114,7 @@ function createDefaultAppData(): AppData {
     dailySnapshots: {},
     nightReviews: {},
     actionLogs: [],
+    goalHistory: [],
   };
 }
 
@@ -221,6 +149,7 @@ function mergeWithDefaults(input?: Partial<AppData> | null): AppData {
     dailySnapshots: input.dailySnapshots ?? base.dailySnapshots,
     nightReviews: input.nightReviews ?? base.nightReviews,
     actionLogs: input.actionLogs ?? base.actionLogs,
+    goalHistory: input.goalHistory ?? base.goalHistory,
   };
 }
 
@@ -701,6 +630,78 @@ function getRecordDetail(dateKey: string): RecordDetail {
 
 const state = readonly(internalState);
 
+function endGoal(type: "year" | "month", status: GoalStatus, reflection: string): void {
+  const profile = internalState.data.visionProfile;
+  const title = type === "year" ? profile.yearGoal : profile.monthProject;
+  const description = type === "year" ? profile.yearGoalDescription : profile.monthProjectDescription;
+  if (!title.trim()) return;
+
+  const record: GoalRecord = {
+    id: createId("goal"),
+    type,
+    title,
+    description,
+    createdAt:
+      internalState.data.goalHistory.find((g) => g.type === type && g.status === "active")?.createdAt ?? nowIso(),
+    endedAt: nowIso(),
+    status,
+    reflection,
+  };
+  internalState.data.goalHistory.unshift(record);
+
+  if (type === "year") {
+    internalState.data.visionProfile = {
+      ...internalState.data.visionProfile,
+      yearGoal: "",
+      yearGoalDescription: "",
+      mainQuestTitle: "",
+      mainQuestDescription: "",
+    };
+  } else {
+    internalState.data.visionProfile = {
+      ...internalState.data.visionProfile,
+      monthProject: "",
+      monthProjectDescription: "",
+      monthProjectDeadline: null,
+    };
+  }
+
+  appendLog(
+    `goal-${status}` as AppData["actionLogs"][number]["type"],
+    `${type === "year" ? "一年目标" : "一月项目"}:${title}`,
+    reflection,
+    record.id,
+  );
+  persist();
+}
+
+function getGoalHistory(type?: "year" | "month"): GoalRecord[] {
+  if (!type) return internalState.data.goalHistory;
+  return internalState.data.goalHistory.filter((g) => g.type === type);
+}
+
+function addConstraint(): void {
+  internalState.data.visionProfile = {
+    ...internalState.data.visionProfile,
+    constraints: [...internalState.data.visionProfile.constraints, "新的约束"],
+  };
+  persist();
+}
+
+function updateConstraint(index: number, value: string): void {
+  const next = [...internalState.data.visionProfile.constraints];
+  next.splice(index, 1, value);
+  internalState.data.visionProfile = { ...internalState.data.visionProfile, constraints: next };
+  persist();
+}
+
+function removeConstraint(index: number): void {
+  const next = [...internalState.data.visionProfile.constraints];
+  next.splice(index, 1);
+  internalState.data.visionProfile = { ...internalState.data.visionProfile, constraints: next };
+  persist();
+}
+
 export function useAppStore() {
   initialize();
 
@@ -744,5 +745,10 @@ export function useAppStore() {
     markArticleSectionRead,
     openArticleSection,
     resetSnooze,
+    endGoal,
+    getGoalHistory,
+    addConstraint,
+    updateConstraint,
+    removeConstraint,
   };
 }

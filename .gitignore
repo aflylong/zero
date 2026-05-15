@@ -1,11 +1,29 @@
+# OS / IDE
 .DS_Store
 .idea/
+.vscode/
+Thumbs.db
 *.log
 
+# Node
 node_modules/
+.pnpm-store/
+
+# Build outputs
 dist/
 unpackage/
 
+# uni-app build outputs
 apps/wechat-uniapp/node_modules/
 apps/wechat-uniapp/dist/
 apps/wechat-uniapp/unpackage/
+
+# Desktop build outputs
+apps/desktop/node_modules/
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
+# Core package build output
+packages/core/dist/
+packages/core/node_modules/

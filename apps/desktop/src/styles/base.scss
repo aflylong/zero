@@ -1,0 +1,46 @@
+// Typography utilities.
+// Prefer these classes over hand-rolled font-size in components.
+
+.kicker {
+  color: var(--si-color-text-muted);
+  font-size: var(--si-font-xs);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: var(--si-font-hero);
+  line-height: var(--si-line-tight);
+  color: var(--si-color-text-main);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.page-title {
+  font-size: var(--si-font-3xl);
+  line-height: var(--si-line-snug);
+  color: var(--si-color-text-main);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.section-title {
+  font-size: var(--si-font-xl);
+  line-height: var(--si-line-snug);
+  color: var(--si-color-text-main);
+  font-weight: 600;
+}
+
+.body-text {
+  color: var(--si-color-text-soft);
+  line-height: var(--si-line-relaxed);
+}
+
+.muted-text {
+  color: var(--si-color-text-muted);
+  line-height: var(--si-line-normal);
+}
+
+.faint-text {
+  color: var(--si-color-text-faint);
+}

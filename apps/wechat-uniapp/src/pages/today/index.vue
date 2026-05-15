@@ -1,6 +1,16 @@
 <template>
   <PageShell tab-key="today" title="今日">
     <view class="today-page">
+      <view v-if="!onboardingCompleted" class="today-welcome">
+        <SectionLabel>还没设过方向和目标</SectionLabel>
+        <text class="today-welcome__title">建议先花 20 分钟读一遍原文,想清楚再来设置。</text>
+        <text class="today-welcome__body">读完之后你会知道自己要去哪、不要回到哪。到时候再来填方向、身份和目标,每一个字都是你自己想出来的。</text>
+        <view class="action-row">
+          <button class="pill-button" @tap="openArticleReader">先读原文</button>
+          <button class="ghost-button" @tap="openOnboarding">我想清楚了,直接设置</button>
+        </view>
+      </view>
+
       <view class="today-identity">
         <SectionLabel>你是谁</SectionLabel>
         <text class="hero-title today-identity__title">{{ identityProfile.statement }}</text>
@@ -102,6 +112,7 @@ import type { ReminderAction } from "@/types/app";
 const store = useAppStore();
 
 const identityProfile = computed(() => store.state.data.identityProfile);
+const onboardingCompleted = computed(() => store.state.data.onboardingCompleted);
 const todayPlan = computed(() => store.today.value.plan);
 const todaySnapshot = computed(() => store.today.value.snapshot);
 const proofRules = computed(() => store.activeProofRules());
@@ -183,6 +194,14 @@ function openReminderSettings() {
 
 function openTodayNote() {
   uni.navigateTo({ url: "/pages/today-note/index" });
+}
+
+function openArticleReader() {
+  uni.navigateTo({ url: "/pages/article-reader/index" });
+}
+
+function openOnboarding() {
+  uni.navigateTo({ url: "/pages/onboarding/index" });
 }
 
 onShow(() => {
@@ -364,4 +383,18 @@ onShow(() => {
 .today-review__button {
   min-width: 220rpx;
 }
+
+.today-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  border-radius: 24rpx;
+  background: rgba(6, 78, 59, 0.18);
+}
+.today-welcome__title { color: #f5f5f5; font-size: 36rpx; line-height: 1.4; font-weight: 600; }
+.today-welcome__body { color: #d4d4d8; font-size: 26rpx; line-height: 1.6; }
+
 </style>

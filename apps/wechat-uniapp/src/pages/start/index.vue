@@ -1,11 +1,14 @@
 <template>
-  <PageShell title="启动系统" topbar-mode="none" compact>
+  <PageShell title="归零" topbar-mode="none" compact>
     <view class="start-page">
       <view class="start-hero">
-        <text class="start-kicker">SELF IMPROVEMENT</text>
-        <text class="start-title">把改变变成今天会发生的动作。</text>
+        <text class="start-kicker">RE:ZERO · 归零</text>
+        <text class="start-title">用一天,重启你的人生。</text>
         <text class="start-copy">
-          先完成 3 个设置：方向、身份、今天的证明。系统会从今天开始记录、提醒和复盘。
+          这个系统基于一篇文章。它不是鸡汤,是一套可以在一天内执行的心智重置流程。
+        </text>
+        <text class="start-copy">
+          建议先花 20 分钟把原文读完——想清楚你要去哪、不要回到哪——再来设置方向、身份和目标。
         </text>
       </view>
 
@@ -23,11 +26,15 @@
         </view>
       </view>
 
-      <button class="pill-button start-button" @tap="startOnboarding">
-        开始设置
+      <button class="pill-button start-button" @tap="readArticle">
+        先读原文
       </button>
 
-      <text class="start-note">未完成初始化前，不会展示完整 tab 内容。</text>
+      <button class="ghost-button start-button" @tap="startOnboarding">
+        我想清楚了,直接设置
+      </button>
+
+      <text class="start-note">未完成初始化前,不会展示完整 tab 内容。</text>
     </view>
   </PageShell>
 </template>
@@ -43,17 +50,23 @@ const store = useAppStore();
 const steps = [
   {
     title: "写清楚方向",
-    body: "愿景和反愿景先定住，不让系统变成散乱清单。",
+    body: "愿景和反愿景先定住,不要让系统变成散乱清单。",
   },
   {
     title: "确定身份",
-    body: "用一句身份陈述，让每天的动作有统一标准。",
+    body: "用一句身份陈述,让每天的动作有统一标准。",
   },
   {
     title: "启动今日证明",
-    body: "只先设置一条今天会完成的动作和两个提醒时间。",
+    body: "设一条今天就能完成的动作,和提醒时间。",
   },
 ] as const;
+
+function readArticle() {
+  uni.navigateTo({
+    url: "/pages/article-reader/index",
+  });
+}
 
 function startOnboarding() {
   uni.navigateTo({

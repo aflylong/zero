@@ -47,24 +47,75 @@
           </view>
 
           <view class="field-block">
-            <text class="field-label">主线任务标题</text>
+            <text class="field-label">一年目标 · 主线任务</text>
+            <text class="muted-text">一年后必须看到什么变化,才算真的打破旧模式?</text>
             <input
-              v-model="mainQuestTitle"
+              v-model="yearGoal"
               class="input-shell"
-              maxlength="24"
-              placeholder="例如：7 天重塑系统"
+              maxlength="32"
+              placeholder="例如:用 365 天彻底重建日常系统"
             />
-          </view>
-
-          <view class="field-block">
-            <text class="field-label">主线任务说明</text>
             <textarea
-              v-model="mainQuestDescription"
+              v-model="yearGoalDescription"
               class="textarea-shell"
               maxlength="220"
               auto-height
-              placeholder="说明这条主线会如何改变你接下来的一周。"
+              placeholder="一年后什么必须为真,你才会承认自己赢了?"
             />
+            <button
+              v-if="yearGoal.trim()"
+              class="danger-button"
+              @tap="endYearGoal"
+            >
+              结束当前一年目标
+            </button>
+          </view>
+
+          <view class="field-block">
+            <text class="field-label">一月项目 · Boss 战</text>
+            <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
+            <input
+              v-model="monthProject"
+              class="input-shell"
+              maxlength="32"
+              placeholder="例如:连续 30 天跑通完整闭环"
+            />
+            <textarea
+              v-model="monthProjectDescription"
+              class="textarea-shell"
+              maxlength="200"
+              auto-height
+              placeholder="做完这件事,你会拿到什么经验值?"
+            />
+            <button
+              v-if="monthProject.trim()"
+              class="danger-button"
+              @tap="endMonthProject"
+            >
+              结束当前一月项目
+            </button>
+          </view>
+
+          <view class="field-block">
+            <view class="field-row">
+              <text class="field-label">约束 · 不能碰的红线</text>
+              <button class="ghost-button" @tap="store.addConstraint()">添加</button>
+            </view>
+            <text class="muted-text">为了实现一年目标,你绝不愿意牺牲什么?睡眠、家人、健康——这些是护栏。</text>
+            <view
+              v-for="(item, idx) in constraints"
+              :key="`constraint-${idx}`"
+              class="belief-row"
+            >
+              <input
+                :value="item"
+                class="input-shell belief-row__input"
+                maxlength="40"
+                placeholder="例如:不牺牲睡眠"
+                @input="onConstraintInput(idx, $event)"
+              />
+              <button class="danger-button" @tap="store.removeConstraint(idx)">删除</button>
+            </view>
           </view>
         </view>
       </GlassCard>
@@ -105,15 +156,70 @@ const whyChangeText = computed({
   set: (value: string) => store.updateVisionProfile({ whyChangeText: value }),
 });
 
-const mainQuestTitle = computed({
-  get: () => store.state.data.visionProfile.mainQuestTitle,
-  set: (value: string) => store.updateVisionProfile({ mainQuestTitle: value }),
+const yearGoal = computed({
+  get: () => store.state.data.visionProfile.yearGoal,
+  set: (value: string) => store.updateVisionProfile({ yearGoal: value }),
 });
 
-const mainQuestDescription = computed({
-  get: () => store.state.data.visionProfile.mainQuestDescription,
-  set: (value: string) => store.updateVisionProfile({ mainQuestDescription: value }),
+const yearGoalDescription = computed({
+  get: () => store.state.data.visionProfile.yearGoalDescription,
+  set: (value: string) => store.updateVisionProfile({ yearGoalDescription: value }),
 });
+
+const monthProject = computed({
+  get: () => store.state.data.visionProfile.monthProject,
+  set: (value: string) => store.updateVisionProfile({ monthProject: value }),
+});
+
+const monthProjectDescription = computed({
+  get: () => store.state.data.visionProfile.monthProjectDescription,
+  set: (value: string) => store.updateVisionProfile({ monthProjectDescription: value }),
+});
+
+const constraints = computed(() => store.state.data.visionProfile.constraints);
+
+function onConstraintInput(idx: number, e: { detail?: { value?: string } }) {
+  store.updateConstraint(idx, e.detail?.value ?? "");
+}
+
+function endYearGoal() {
+  promptEndGoal("year");
+}
+
+function endMonthProject() {
+  promptEndGoal("month");
+}
+
+function promptEndGoal(type: "year" | "month") {
+  const label = type === "year" ? "一年目标" : "一月项目";
+  uni.showActionSheet({
+    itemList: [`已完成 ${label}`, "已养成习惯", "放弃,换方向"],
+    success: ({ tapIndex }) => {
+      const statusMap = ["completed", "habituated", "abandoned"] as const;
+      const status = statusMap[tapIndex];
+      askReflection(type, status, label);
+    },
+  });
+}
+
+function askReflection(type: "year" | "month", status: "completed" | "habituated" | "abandoned", label: string) {
+  const promptMap = {
+    completed: `你完成了${label}。从中学到了什么?下一个目标是什么?`,
+    habituated: `${label}已经变成你的一部分了。它具体怎么影响你了?`,
+    abandoned: `为什么放弃${label}?是方向错了还是执行力不够?下一步怎么调整?`,
+  };
+  uni.showModal({
+    title: `结束${label}`,
+    editable: true,
+    placeholderText: promptMap[status],
+    confirmText: "确认结束",
+    success: ({ confirm, content }) => {
+      if (!confirm) return;
+      store.endGoal(type, status, content ?? "");
+      uni.showToast({ title: "已归档", icon: "success" });
+    },
+  });
+}
 
 function goBack() {
   if (getCurrentPages().length > 1) {

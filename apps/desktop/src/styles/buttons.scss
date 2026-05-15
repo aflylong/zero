@@ -1,0 +1,135 @@
+// Button system.
+// HARD RULE: any icon placed inside a button inherits `currentColor` so it
+// always matches the button's text color.  Do NOT give icons their own color
+// inside buttons.  Use semantic intent classes for color roles.
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--si-radius-pill);
+  border: 1px solid transparent;
+  font-size: var(--si-font-md);
+  font-weight: var(--si-weight-medium);
+  line-height: 1.2;
+  color: var(--si-color-text-main);
+  background: transparent;
+  transition: background-color 140ms ease, border-color 140ms ease,
+    transform 60ms ease;
+  white-space: nowrap;
+
+  // CRITICAL: icons inside a button always follow text color.
+  :deep(svg),
+  svg {
+    color: currentColor;
+    stroke: currentColor;
+    flex-shrink: 0;
+  }
+
+  &:disabled,
+  &[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+/* PRIMARY — brand green; fg is deep green for contrast */
+.btn-primary {
+  background: var(--si-color-brand);
+  border-color: var(--si-color-brand);
+  color: var(--si-color-brand-deep);
+
+  &:hover:not(:disabled) {
+    background: var(--si-color-brand-strong);
+  }
+}
+
+/* GHOST — default action on dark surface */
+.btn-ghost {
+  background: rgba(17, 24, 39, 0.22);
+  border-color: var(--si-color-border-card);
+  color: var(--si-color-text-soft);
+
+  &:hover:not(:disabled) {
+    background: rgba(17, 24, 39, 0.4);
+    border-color: rgba(113, 113, 122, 0.64);
+  }
+}
+
+/* SUBTLE — no border, hover-only background */
+.btn-subtle {
+  color: var(--si-color-text-soft);
+
+  &:hover:not(:disabled) {
+    background: rgba(39, 39, 42, 0.72);
+  }
+}
+
+/* DESTRUCTIVE — delete red */
+.btn-destructive {
+  background: var(--si-color-danger-bg);
+  border-color: var(--si-color-danger-border);
+  color: var(--si-color-danger-text);
+
+  &:hover:not(:disabled) {
+    background: rgba(127, 29, 29, 0.45);
+  }
+}
+
+/* EDIT — info blue */
+.btn-edit {
+  background: var(--si-color-info-bg);
+  border-color: var(--si-color-info-border);
+  color: var(--si-color-info-text);
+
+  &:hover:not(:disabled) {
+    background: rgba(30, 58, 138, 0.42);
+  }
+}
+
+/* SUCCESS — confirming green variant */
+.btn-success {
+  background: var(--si-color-success-bg);
+  border-color: var(--si-color-success-border);
+  color: var(--si-color-success-text);
+
+  &:hover:not(:disabled) {
+    background: rgba(6, 95, 70, 0.42);
+  }
+}
+
+/* WARNING — caution orange */
+.btn-warning {
+  background: var(--si-color-warning-bg);
+  border-color: var(--si-color-warning-border);
+  color: var(--si-color-warning-text);
+}
+
+/* Size modifiers */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: var(--si-font-sm);
+}
+.btn-lg {
+  padding: 12px 20px;
+  font-size: var(--si-font-lg);
+}
+
+/* Icon-only button — square footprint */
+.btn-icon {
+  padding: 8px;
+  border-radius: var(--si-radius-md);
+}
+
+/* Row of buttons */
+.action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

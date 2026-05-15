@@ -18,10 +18,32 @@
       </view>
 
       <GradientHeroCard card-class="path-quest">
-        <SectionLabel>当前主线</SectionLabel>
-        <text class="path-quest__title">{{ mainQuestTitle }}</text>
-        <text class="body-text">{{ mainQuestDescription }}</text>
+        <SectionLabel>一年目标 · 主线任务</SectionLabel>
+        <text class="path-quest__title">{{ yearGoalTitle }}</text>
+        <text class="body-text">{{ yearGoalDesc }}</text>
       </GradientHeroCard>
+
+      <view class="path-splits">
+        <SectionLabel>一月项目 · Boss 战</SectionLabel>
+        <text class="path-card__title">{{ monthProjectTitle }}</text>
+        <text class="body-text">{{ monthProjectDesc }}</text>
+      </view>
+
+      <view class="path-splits">
+        <SectionLabel>约束 · 不能碰的红线</SectionLabel>
+        <text v-if="!constraints.length" class="muted-text">
+          约束是你为了实现愿景,绝不愿意牺牲的东西。睡眠、家人、健康——这些是护栏。去编辑页加几条。
+        </text>
+        <view v-else class="path-constraints">
+          <view
+            v-for="(item, idx) in constraints"
+            :key="`c-${idx}`"
+            class="path-constraint"
+          >
+            <text class="path-constraint__text">· {{ item }}</text>
+          </view>
+        </view>
+      </view>
 
       <button class="path-article-row" @tap="openArticleReader">
         <view class="path-article-row__copy">
@@ -68,7 +90,30 @@ const mainQuestTitle = computed(
 const mainQuestDescription = computed(
   () =>
     store.state.data.visionProfile.mainQuestDescription.trim() ||
-    "把这一周最重要的推进方向写下来，今日页才有真正的主线感。",
+    "把这一周最重要的推进方向写下来,今日页才有真正的主线感。",
+);
+const yearGoalTitle = computed(
+  () =>
+    store.state.data.visionProfile.yearGoal.trim() ||
+    store.state.data.visionProfile.mainQuestTitle.trim() ||
+    "先定下这一年要走到哪。",
+);
+const yearGoalDesc = computed(
+  () =>
+    store.state.data.visionProfile.yearGoalDescription.trim() ||
+    store.state.data.visionProfile.mainQuestDescription.trim() ||
+    "一年后什么必须为真,你才会承认自己赢了?",
+);
+const monthProjectTitle = computed(
+  () => store.state.data.visionProfile.monthProject.trim() || "这个月要攻克的具体里程碑是什么?",
+);
+const monthProjectDesc = computed(
+  () =>
+    store.state.data.visionProfile.monthProjectDescription.trim() ||
+    "想清楚:做完这件事,一年目标是不是更近了一步?",
+);
+const constraints = computed(() =>
+  store.state.data.visionProfile.constraints.filter((c) => c.trim()),
 );
 const articleSummary = computed(
   () => articleSections[0]?.summary ?? "阅读原文，理解这套系统为什么能真正运转起来。",
@@ -186,3 +231,5 @@ onShow(() => {
   line-height: 1;
 }
 </style>
+
+

@@ -1,6 +1,6 @@
 export type DeliveryMode = "in-app" | "wechat-subscribe";
 export type SubscriptionStatus = "unknown" | "pending" | "accepted" | "declined";
-export type ReminderKind = "day" | "night";
+export type ReminderKind = "morning" | "day" | "night";
 export type ReminderAction = "complete" | "snooze" | "skip";
 export type ActionLogType =
   | "proof-complete"
@@ -11,7 +11,11 @@ export type ActionLogType =
   | "note-updated"
   | "review-saved"
   | "belief-added"
-  | "belief-removed";
+  | "belief-removed"
+  | "goal-completed"
+  | "goal-habituated"
+  | "goal-abandoned"
+  | "goal-created";
 
 export interface ArticleParagraph {
   id: string;
@@ -38,8 +42,35 @@ export interface VisionProfile {
   visionText: string;
   antiVisionText: string;
   whyChangeText: string;
+
+  /** 一年目标(主线任务) */
+  yearGoal: string;
+  yearGoalDescription: string;
+
+  /** 一月项目(Boss 战) */
+  monthProject: string;
+  monthProjectDescription: string;
+  monthProjectDeadline: string | null;
+
+  /** 约束 */
+  constraints: string[];
+
+  /** @deprecated 向后兼容 */
   mainQuestTitle: string;
   mainQuestDescription: string;
+}
+
+export type GoalStatus = "active" | "completed" | "habituated" | "abandoned";
+
+export interface GoalRecord {
+  id: string;
+  type: "year" | "month";
+  title: string;
+  description: string;
+  createdAt: string;
+  endedAt: string | null;
+  status: GoalStatus;
+  reflection: string;
 }
 
 export interface IdentityProfile {
@@ -175,6 +206,7 @@ export interface AppData {
   dailySnapshots: Record<string, DailySnapshot>;
   nightReviews: Record<string, NightReview>;
   actionLogs: ActionLog[];
+  goalHistory: GoalRecord[];
 }
 
 export interface ReminderPrompt {

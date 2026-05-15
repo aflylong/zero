@@ -1,4 +1,4 @@
-const STORAGE_KEY = "self-improvement-miniapp:v1";
+const STORAGE_KEY = "guiling:v1";
 
 export function readAppStorage<T>(fallback: T) {
   try {
