@@ -1,73 +1,133 @@
 <template>
   <PageShell
-    title="道路编辑"
+    title="编辑道路"
     topbar-mode="secondary"
     back-url="/pages/path/index"
   >
     <view class="editor-page">
       <view class="editor-hero">
         <SectionLabel>方向与主线</SectionLabel>
-        <text class="editor-hero__title">把愿景、反愿景和阶段主线整理成真正会驱动今天的内容。</text>
-        <text class="muted-text">这里是实时保存，主 tab 只保留摘要与执行面。</text>
+        <text class="editor-hero__title">把愿景、反愿景三段叙事和目标层级整理清楚。</text>
+        <text class="muted-text">实时保存。改完直接回去就行。</text>
       </view>
 
       <GlassCard card-class="editor-card">
         <view class="editor-fields">
           <view class="field-block">
-            <text class="field-label">愿景</text>
+            <text class="field-label">愿景概述</text>
             <textarea
-              v-model="visionText"
+              :value="visionText"
               class="textarea-shell"
               maxlength="300"
               auto-height
-              placeholder="描述你想去到的生活、工作和关系状态。"
+              placeholder="描述你想去的生活、工作和关系。要具体到能在脑子里看见画面。"
+              @input="setField('visionText', $event)"
             />
           </view>
 
           <view class="field-block">
-            <text class="field-label">反愿景</text>
+            <text class="field-label">Q12 · 三年后理想周二</text>
             <textarea
-              v-model="antiVisionText"
+              :value="threeYearTuesday"
               class="textarea-shell"
-              maxlength="240"
+              maxlength="500"
               auto-height
-              placeholder="描述那个你不愿回去的旧轨道。"
+              placeholder="忘掉「现实性」。三年后的普通周二:在哪醒来?第一念头?9-18 点做什么?"
+              @input="setField('threeYearTuesday', $event)"
             />
           </view>
 
           <view class="field-block">
-            <text class="field-label">为什么必须改变</text>
+            <text class="field-label">Q14 · 这周会做的一件事</text>
+            <input
+              :value="oneThingThisWeek"
+              class="input-shell"
+              maxlength="80"
+              placeholder="例如:周三晚上把那篇拖了三周的稿子发出去。"
+              @input="setField('oneThingThisWeek', $event)"
+            />
+          </view>
+        </view>
+      </GlassCard>
+
+      <GlassCard card-class="editor-card">
+        <view class="editor-fields">
+          <view class="field-block">
+            <text class="field-label">反愿景概述</text>
             <textarea
-              v-model="whyChangeText"
+              :value="antiVisionText"
               class="textarea-shell"
-              maxlength="240"
+              maxlength="500"
               auto-height
-              placeholder="把改变背后的理由写成你愿意兑现的承诺。"
+              placeholder="那个你不愿回去的旧自己。这股不舒服会在松懈时把你拽回来。"
+              @input="setField('antiVisionText', $event)"
             />
           </view>
 
+          <view class="field-block">
+            <text class="field-label">Q5 · 5 年后无变化的周二</text>
+            <textarea
+              :value="fiveYearTuesday"
+              class="textarea-shell"
+              maxlength="500"
+              auto-height
+              placeholder="醒来地点 / 身体感觉 / 第一念头 / 谁在身边 / 9-18 点 / 22 点"
+              @input="setField('fiveYearTuesday', $event)"
+            />
+          </view>
+
+          <view class="field-block">
+            <text class="field-label">Q6 · 10 年后周二</text>
+            <textarea
+              :value="tenYearTuesday"
+              class="textarea-shell"
+              maxlength="500"
+              auto-height
+              placeholder="错过了什么 / 哪些机会关闭 / 谁放弃你 / 不在场时人们怎么评价"
+              @input="setField('tenYearTuesday', $event)"
+            />
+          </view>
+
+          <view class="field-block">
+            <text class="field-label">Q7 · 人生尽头</text>
+            <textarea
+              :value="endOfLife"
+              class="textarea-shell"
+              maxlength="500"
+              auto-height
+              placeholder="你从未感受 / 尝试 / 成为的"
+              @input="setField('endOfLife', $event)"
+            />
+          </view>
+        </view>
+      </GlassCard>
+
+      <GlassCard card-class="editor-card">
+        <view class="editor-fields">
           <view class="field-block">
             <text class="field-label">一年目标 · 主线任务</text>
-            <text class="muted-text">一年后必须看到什么变化,才算真的打破旧模式?</text>
+            <text class="muted-text">一年后必须看到什么变化,才算真的打破了旧模式?</text>
             <input
-              v-model="yearGoal"
+              :value="yearGoal"
               class="input-shell"
               maxlength="32"
               placeholder="例如:用 365 天彻底重建日常系统"
+              @input="setField('yearGoal', $event)"
             />
             <textarea
-              v-model="yearGoalDescription"
+              :value="yearGoalDescription"
               class="textarea-shell"
               maxlength="220"
               auto-height
               placeholder="一年后什么必须为真,你才会承认自己赢了?"
+              @input="setField('yearGoalDescription', $event)"
             />
             <button
               v-if="yearGoal.trim()"
               class="danger-button"
               @tap="endYearGoal"
             >
-              结束当前一年目标
+              归档当前一年目标
             </button>
           </view>
 
@@ -75,24 +135,26 @@
             <text class="field-label">一月项目 · Boss 战</text>
             <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
             <input
-              v-model="monthProject"
+              :value="monthProject"
               class="input-shell"
               maxlength="32"
               placeholder="例如:连续 30 天跑通完整闭环"
+              @input="setField('monthProject', $event)"
             />
             <textarea
-              v-model="monthProjectDescription"
+              :value="monthProjectDescription"
               class="textarea-shell"
               maxlength="200"
               auto-height
               placeholder="做完这件事,你会拿到什么经验值?"
+              @input="setField('monthProjectDescription', $event)"
             />
             <button
               v-if="monthProject.trim()"
               class="danger-button"
               @tap="endMonthProject"
             >
-              结束当前一月项目
+              归档当前一月项目
             </button>
           </view>
 
@@ -124,7 +186,7 @@
     <template #footer>
       <view class="editor-footer">
         <button class="ghost-button editor-footer__button" @tap="openArticleReader">阅读原文</button>
-        <button class="pill-button editor-footer__button" @tap="goBack">返回道路</button>
+        <button class="pill-button editor-footer__button" @tap="goBack">回到道路</button>
       </view>
     </template>
   </PageShell>
@@ -136,56 +198,41 @@ import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { ensureOnboardingReady, switchToTab } from "@/services/navigation";
+import { switchToTab } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
+import type { VisionProfile } from "@/types/app";
+
+type UniValueEvent = Event & { detail?: { value?: string } };
 
 const store = useAppStore();
 
-const visionText = computed({
-  get: () => store.state.data.visionProfile.visionText,
-  set: (value: string) => store.updateVisionProfile({ visionText: value }),
-});
-
-const antiVisionText = computed({
-  get: () => store.state.data.visionProfile.antiVisionText,
-  set: (value: string) => store.updateVisionProfile({ antiVisionText: value }),
-});
-
-const whyChangeText = computed({
-  get: () => store.state.data.visionProfile.whyChangeText,
-  set: (value: string) => store.updateVisionProfile({ whyChangeText: value }),
-});
-
-const yearGoal = computed({
-  get: () => store.state.data.visionProfile.yearGoal,
-  set: (value: string) => store.updateVisionProfile({ yearGoal: value }),
-});
-
-const yearGoalDescription = computed({
-  get: () => store.state.data.visionProfile.yearGoalDescription,
-  set: (value: string) => store.updateVisionProfile({ yearGoalDescription: value }),
-});
-
-const monthProject = computed({
-  get: () => store.state.data.visionProfile.monthProject,
-  set: (value: string) => store.updateVisionProfile({ monthProject: value }),
-});
-
-const monthProjectDescription = computed({
-  get: () => store.state.data.visionProfile.monthProjectDescription,
-  set: (value: string) => store.updateVisionProfile({ monthProjectDescription: value }),
-});
-
+const visionText = computed(() => store.state.data.visionProfile.visionText);
+const antiVisionText = computed(() => store.state.data.visionProfile.antiVisionText);
+const fiveYearTuesday = computed(() => store.state.data.visionProfile.fiveYearTuesday);
+const tenYearTuesday = computed(() => store.state.data.visionProfile.tenYearTuesday);
+const endOfLife = computed(() => store.state.data.visionProfile.endOfLife);
+const threeYearTuesday = computed(() => store.state.data.visionProfile.threeYearTuesday);
+const oneThingThisWeek = computed(() => store.state.data.visionProfile.oneThingThisWeek);
+const yearGoal = computed(() => store.state.data.visionProfile.yearGoal);
+const yearGoalDescription = computed(() => store.state.data.visionProfile.yearGoalDescription);
+const monthProject = computed(() => store.state.data.visionProfile.monthProject);
+const monthProjectDescription = computed(
+  () => store.state.data.visionProfile.monthProjectDescription,
+);
 const constraints = computed(() => store.state.data.visionProfile.constraints);
 
-function onConstraintInput(idx: number, e: { detail?: { value?: string } }) {
-  store.updateConstraint(idx, e.detail?.value ?? "");
+function setField(field: keyof VisionProfile, e: UniValueEvent) {
+  const value = String(e.detail?.value ?? "");
+  store.updateVisionProfile({ [field]: value } as Partial<VisionProfile>);
+}
+
+function onConstraintInput(idx: number, e: UniValueEvent) {
+  store.updateConstraint(idx, String(e.detail?.value ?? ""));
 }
 
 function endYearGoal() {
   promptEndGoal("year");
 }
-
 function endMonthProject() {
   promptEndGoal("month");
 }
@@ -193,7 +240,7 @@ function endMonthProject() {
 function promptEndGoal(type: "year" | "month") {
   const label = type === "year" ? "一年目标" : "一月项目";
   uni.showActionSheet({
-    itemList: [`已完成 ${label}`, "已养成习惯", "放弃,换方向"],
+    itemList: [`已完成 ${label}`, "已习惯化", "放弃,换方向"],
     success: ({ tapIndex }) => {
       const statusMap = ["completed", "habituated", "abandoned"] as const;
       const status = statusMap[tapIndex];
@@ -202,17 +249,21 @@ function promptEndGoal(type: "year" | "month") {
   });
 }
 
-function askReflection(type: "year" | "month", status: "completed" | "habituated" | "abandoned", label: string) {
+function askReflection(
+  type: "year" | "month",
+  status: "completed" | "habituated" | "abandoned",
+  label: string,
+) {
   const promptMap = {
     completed: `你完成了${label}。从中学到了什么?下一个目标是什么?`,
     habituated: `${label}已经变成你的一部分了。它具体怎么影响你了?`,
     abandoned: `为什么放弃${label}?是方向错了还是执行力不够?下一步怎么调整?`,
   };
   uni.showModal({
-    title: `结束${label}`,
+    title: `归档${label}`,
     editable: true,
     placeholderText: promptMap[status],
-    confirmText: "确认结束",
+    confirmText: "归档",
     success: ({ confirm, content }) => {
       if (!confirm) return;
       store.endGoal(type, status, content ?? "");
@@ -226,7 +277,6 @@ function goBack() {
     uni.navigateBack();
     return;
   }
-
   switchToTab("/pages/path/index");
 }
 
@@ -236,9 +286,6 @@ function openArticleReader() {
 
 onShow(() => {
   store.initialize();
-  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
-    return;
-  }
 });
 </script>
 
@@ -252,16 +299,11 @@ onShow(() => {
   flex-direction: column;
 }
 
-.editor-page {
-  gap: 24rpx;
-}
-
+.editor-page { gap: 24rpx; }
 .editor-hero,
 .editor-card,
 .editor-fields,
-.field-block {
-  gap: 18rpx;
-}
+.field-block { gap: 18rpx; }
 
 .editor-hero__title {
   color: #f5f5f5;
@@ -273,6 +315,22 @@ onShow(() => {
   color: #f4f4f5;
   font-size: 24rpx;
   line-height: 1.4;
+}
+
+.field-row,
+.belief-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.belief-row {
+  align-items: stretch;
+}
+
+.belief-row__input {
+  flex: 1;
 }
 
 .editor-footer {

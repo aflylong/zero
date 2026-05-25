@@ -34,31 +34,31 @@
 
         <GlassCard>
           <div class="identity-editor__head">
-            <SectionLabel :icon="Sparkles">核心信念</SectionLabel>
-            <button type="button" class="btn btn-ghost btn-sm" @click="store.addBelief()">
+            <SectionLabel :icon="Sparkles">原则</SectionLabel>
+            <button type="button" class="btn btn-ghost btn-sm" @click="store.addPrinciple()">
               <Plus :size="14" :stroke-width="iconStroke" />
-              <span>新增信念</span>
+              <span>新增原则</span>
             </button>
           </div>
 
-          <div v-if="beliefs.length" class="identity-editor__belief-list">
+          <div v-if="principles.length" class="identity-editor__belief-list">
             <div
-              v-for="(belief, index) in beliefs"
-              :key="`belief-edit-${index}`"
+              v-for="(p, index) in principles"
+              :key="`p-edit-${index}`"
               class="identity-editor__belief"
             >
               <input
-                :value="belief"
+                :value="p"
                 class="form-input"
                 maxlength="40"
-                placeholder="写一句你愿意反复执行的信念"
-                @input="onBeliefInput(index, $event)"
+                placeholder="写一句你愿意反复执行的话"
+                @input="onPrincipleInput(index, $event)"
               />
               <button
                 type="button"
                 class="btn btn-destructive btn-sm btn-icon"
                 title="删除"
-                @click="store.removeBelief(index)"
+                @click="store.removePrinciple(index)"
               >
                 <Trash2 :size="14" :stroke-width="iconStroke" />
               </button>
@@ -68,17 +68,17 @@
           <EmptyState
             v-else
             :icon="Sparkles"
-            title="还没有信念条目"
-            description="点上方「新增信念」,写一条你愿意反复执行的话。"
+            title="还没有原则"
+            description="点上方「新增原则」,写一条你愿意反复执行的话。"
           />
         </GlassCard>
 
         <GlassCard>
           <div class="identity-editor__head">
-            <SectionLabel :icon="CheckCircle2">证明法则</SectionLabel>
+            <SectionLabel :icon="CheckCircle2">每日杠杆</SectionLabel>
             <button type="button" class="btn btn-ghost btn-sm" @click="store.createProofRule()">
               <Plus :size="14" :stroke-width="iconStroke" />
-              <span>新增法则</span>
+              <span>新增杠杆</span>
             </button>
           </div>
 
@@ -113,17 +113,36 @@
               <input
                 :value="rule.title"
                 class="form-input"
-                maxlength="32"
-                placeholder="例如:想到就动,5 分钟内开始"
+                maxlength="48"
+                placeholder="例如:9:30-11:00 写作 90 分钟"
                 @input="updateRuleField(rule, 'title', $event)"
               />
               <textarea
                 :value="rule.description"
                 class="form-textarea"
-                maxlength="120"
+                maxlength="160"
                 placeholder="补一句什么算完成,什么才是真正的证据。"
                 @input="updateRuleField(rule, 'description', $event)"
               />
+
+              <div class="identity-editor__rule-links">
+                <label class="identity-editor__rule-link">
+                  <input
+                    type="checkbox"
+                    :checked="rule.linkedYearGoal ?? false"
+                    @change="toggleLinkYear(rule, $event)"
+                  />
+                  <span>关联一年目标(主线)</span>
+                </label>
+                <label class="identity-editor__rule-link">
+                  <input
+                    type="checkbox"
+                    :checked="rule.linkedMonthProject ?? false"
+                    @change="toggleLinkMonth(rule, $event)"
+                  />
+                  <span>关联一月项目(Boss 战)</span>
+                </label>
+              </div>
 
               <div class="action-row">
                 <button
@@ -154,7 +173,7 @@
                     :size="14"
                     :stroke-width="iconStroke"
                   />
-                  <span>{{ rule.active ? "停用法则" : "重新启用" }}</span>
+                  <span>{{ rule.active ? "停用" : "重新启用" }}</span>
                 </button>
               </div>
             </article>
@@ -163,7 +182,7 @@
           <EmptyState
             v-else
             :icon="ListChecks"
-            title="还没有证明法则"
+            title="还没有每日杠杆"
             description="一条可验证的动作,比十句口号更有用。"
           />
         </GlassCard>
@@ -196,7 +215,7 @@ import SectionLabel from "@/components/common/SectionLabel.vue";
 const iconStroke = tokens.iconStrokeWidth;
 const store = useAppStore();
 
-const beliefs = computed(() => store.state.data.identityProfile.beliefs);
+const principles = computed(() => store.state.data.identityProfile.principles);
 const proofRules = computed(() => store.state.data.proofRules);
 
 const statement = computed({
@@ -208,8 +227,8 @@ const antiIdentityText = computed({
   set: (v: string) => store.updateIdentityProfile({ antiIdentityText: v }),
 });
 
-function onBeliefInput(index: number, e: Event) {
-  store.updateBelief(index, (e.target as HTMLInputElement).value);
+function onPrincipleInput(index: number, e: Event) {
+  store.updatePrinciple(index, (e.target as HTMLInputElement).value);
 }
 
 function updateRuleField(rule: ProofRule, field: "title" | "description", e: Event) {
@@ -225,6 +244,20 @@ function updateRuleCadence(rule: ProofRule, cadence: ProofRule["cadence"]) {
 
 function toggleRuleActive(rule: ProofRule) {
   store.upsertProofRule({ ...rule, active: !rule.active });
+}
+
+function toggleLinkYear(rule: ProofRule, e: Event) {
+  store.upsertProofRule({
+    ...rule,
+    linkedYearGoal: (e.target as HTMLInputElement).checked,
+  });
+}
+
+function toggleLinkMonth(rule: ProofRule, e: Event) {
+  store.upsertProofRule({
+    ...rule,
+    linkedMonthProject: (e.target as HTMLInputElement).checked,
+  });
 }
 </script>
 
@@ -287,5 +320,23 @@ function toggleRuleActive(rule: ProofRule) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.identity-editor__rule-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-inset);
+  font-size: var(--si-font-sm);
+  color: var(--si-color-text-soft);
+}
+
+.identity-editor__rule-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
 }
 </style>

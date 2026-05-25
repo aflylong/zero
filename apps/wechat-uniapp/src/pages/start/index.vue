@@ -5,10 +5,12 @@
         <text class="start-kicker">RE:ZERO · 归零</text>
         <text class="start-title">用一天,重启你的人生。</text>
         <text class="start-copy">
-          这个系统基于一篇文章。它不是鸡汤,是一套可以在一天内执行的心智重置流程。
+          这套系统基于 Dan Koe 的一篇长文。原文给的是一套需要花
+          <text class="start-copy__bold">整整一天</text>跑完的心智重置流程,而不是几分钟的表单。
         </text>
         <text class="start-copy">
-          建议先花 20 分钟把原文读完——想清楚你要去哪、不要回到哪——再来设置方向、身份和目标。
+          推荐路径:先把原文读完(7 章,约 20 分钟),然后留出整整一天,严格按系统的引导回答 22 道题——
+          11 道早晨开掘、9 道白天打断、5 步夜晚综合。
         </text>
       </view>
 
@@ -30,11 +32,17 @@
         先读原文
       </button>
 
-      <button class="ghost-button start-button" @tap="startOnboarding">
-        我想清楚了,直接设置
+      <button class="ghost-button start-button" @tap="startJourney">
+        今天就跑一遍流程
       </button>
 
-      <text class="start-note">未完成初始化前,不会展示完整 tab 内容。</text>
+      <button class="ghost-button start-button start-button--small" @tap="startOnboarding">
+        我已读已想过,直接快速设置
+      </button>
+
+      <button class="ghost-button start-button start-button--small" @tap="openPrivacy">
+        隐私政策
+      </button>
     </view>
   </PageShell>
 </template>
@@ -49,34 +57,42 @@ const store = useAppStore();
 
 const steps = [
   {
-    title: "写清楚方向",
-    body: "愿景和反愿景先定住,不要让系统变成散乱清单。",
+    title: "读原文 · 看清结构",
+    body: "7 章串起原文核心:身份、目标、控制论、心智阶段、6 组件。",
   },
   {
-    title: "确定身份",
-    body: "用一句身份陈述,让每天的动作有统一标准。",
+    title: "跑流程 · 22 题深挖",
+    body: "11 题早晨开掘 + 9 题白天打断 + 5 步夜晚综合,严格按时间走。",
   },
   {
-    title: "启动今日证明",
-    body: "设一条今天就能完成的动作,和提醒时间。",
+    title: "把每天变成证据",
+    body: "把当晚综合的明日时间块自动升格为「今日杠杆」,系统就开始跑。",
   },
 ] as const;
 
 function readArticle() {
-  uni.navigateTo({
-    url: "/pages/article-reader/index",
-  });
+  uni.navigateTo({ url: "/pages/article-reader/index" });
+}
+
+function startJourney() {
+  uni.navigateTo({ url: "/pages/journey-morning/index" });
 }
 
 function startOnboarding() {
-  uni.navigateTo({
-    url: "/pages/onboarding/index",
-  });
+  uni.navigateTo({ url: "/pages/onboarding/index" });
+}
+
+function openPrivacy() {
+  uni.navigateTo({ url: "/pages/privacy/index" });
 }
 
 onShow(() => {
   store.initialize();
-  if (store.state.data.onboardingCompleted) {
+  const everStarted =
+    store.state.data.onboardingCompleted ||
+    store.state.data.journeyCompleted ||
+    Boolean(store.state.data.morningExcavation.startedAt);
+  if (everStarted) {
     switchToTab(TODAY_PAGE_PATH);
   }
 });
@@ -88,14 +104,14 @@ onShow(() => {
   min-height: calc(100vh - 96rpx);
   flex-direction: column;
   justify-content: center;
-  gap: 34rpx;
+  gap: 30rpx;
   padding-top: calc(env(safe-area-inset-top) + 28rpx);
 }
 
 .start-hero {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 18rpx;
 }
 
 .start-kicker {
@@ -107,16 +123,20 @@ onShow(() => {
 .start-title {
   max-width: 620rpx;
   color: #f5f5f5;
-  font-size: 68rpx;
+  font-size: 64rpx;
   line-height: 1.08;
   font-weight: 600;
 }
 
-.start-copy,
-.start-note {
+.start-copy {
   color: #a1a1aa;
   font-size: 28rpx;
   line-height: 1.68;
+}
+
+.start-copy__bold {
+  color: #f5f5f5;
+  font-weight: 600;
 }
 
 .start-flow {
@@ -130,7 +150,7 @@ onShow(() => {
 .start-flow__item {
   display: flex;
   gap: 22rpx;
-  padding: 26rpx 0;
+  padding: 24rpx 0;
 }
 
 .start-flow__item + .start-flow__item {
@@ -141,7 +161,6 @@ onShow(() => {
   width: 52rpx;
   color: #52525b;
   font-size: 22rpx;
-  line-height: 1.5;
   flex-shrink: 0;
 }
 
@@ -154,7 +173,7 @@ onShow(() => {
 
 .start-flow__title {
   color: #f4f4f5;
-  font-size: 30rpx;
+  font-size: 28rpx;
   line-height: 1.4;
 }
 
@@ -169,5 +188,10 @@ onShow(() => {
   min-width: 260rpx;
   padding: 22rpx 36rpx;
   font-size: 28rpx;
+}
+
+.start-button--small {
+  font-size: 24rpx;
+  color: #71717a;
 }
 </style>

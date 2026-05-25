@@ -10,8 +10,29 @@ export * from "./services/notification";
 
 // Static content
 export { articleTitle, articleSourceUrl, articleSections } from "./content/article";
-export { quotes, pickDailyQuote, pickRandomQuote } from "./content/quotes";
-export type { Quote } from "./content/quotes";
+export {
+  quotes,
+  pickDailyQuote,
+  pickRandomQuote,
+  authoritativeQuotes,
+  findAuthoritativeQuote,
+} from "./content/quotes";
+export type { Quote, AuthoritativeQuote } from "./content/quotes";
+export {
+  excavationQuestions,
+  findExcavationQuestion,
+} from "./content/excavationQuestions";
+export type {
+  ExcavationQuestion,
+  ExcavationStage,
+} from "./content/excavationQuestions";
+export {
+  dayPrompts,
+  findDayPrompt,
+  defaultTimedDayPrompts,
+  defaultCommuteDayPrompts,
+} from "./content/dayPrompts";
+export type { DayPrompt, DayPromptKind } from "./content/dayPrompts";
 
 // Store
 export { useAppStore } from "./stores/useAppStore";

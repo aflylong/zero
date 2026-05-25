@@ -34,8 +34,8 @@
         <section class="record-detail-col record-detail-col--main">
           <GlassCard variant="hero">
             <SectionLabel :icon="Target">当天主线</SectionLabel>
-            <p class="record-detail__title">{{ detail.mainQuestTitle }}</p>
-            <p class="body-text">{{ detail.mainQuestDescription }}</p>
+            <p class="record-detail__title">{{ detail.yearGoalTitle }}</p>
+            <p class="body-text">{{ detail.yearGoalDescription }}</p>
             <p class="muted-text">
               对齐身份:{{ detail.focusTheme || "尚未定义" }}
             </p>
@@ -94,27 +94,65 @@
             </p>
           </GlassCard>
 
-          <GlassCard>
-            <SectionLabel :icon="Moon">夜间复盘</SectionLabel>
-            <div v-if="detail.hasNightReview" class="record-detail-review">
-              <div class="record-detail-review__block">
-                <span class="record-detail-review__label">赢点</span>
-                <p class="body-text">{{ detail.winsText || "未填写" }}</p>
-              </div>
-              <div class="record-detail-review__block">
-                <span class="record-detail-review__label">偏离点</span>
-                <p class="body-text">{{ detail.missesText || "未填写" }}</p>
-              </div>
-              <div class="record-detail-review__block">
-                <span class="record-detail-review__label">反思</span>
-                <p class="body-text">{{ detail.reflectionText || "未填写" }}</p>
-              </div>
-              <div class="record-detail-review__block">
-                <span class="record-detail-review__label">明日修正</span>
-                <p class="body-text">{{ detail.tomorrowFixesText || "未填写" }}</p>
+          <GlassCard v-if="detail.dayPromptResponses.length">
+            <SectionLabel :icon="Sun">白天打断作答</SectionLabel>
+            <div class="record-detail-list">
+              <div
+                v-for="r in detail.dayPromptResponses"
+                :key="`${r.promptKey}-${r.answeredAt}`"
+                class="record-detail-prompt"
+              >
+                <span class="record-detail-prompt__key">{{ r.promptKey }}</span>
+                <span class="record-detail-prompt__answer">{{ r.answer }}</span>
+                <span class="record-detail-prompt__meta">{{ formatTime(r.answeredAt) }}</span>
               </div>
             </div>
-            <EmptyState v-else :icon="Moon" title="这一天还没写夜间复盘" />
+          </GlassCard>
+
+          <GlassCard v-if="detail.synthesis">
+            <SectionLabel :icon="Telescope">夜间综合(N1-N5)</SectionLabel>
+            <div class="record-detail-review">
+              <div class="record-detail-review__block">
+                <span class="record-detail-review__label">N1 卡住的真正原因</span>
+                <p class="body-text">{{ detail.synthesis.stuckReason || "未填写" }}</p>
+              </div>
+              <div class="record-detail-review__block">
+                <span class="record-detail-review__label">N2 命名敌人</span>
+                <p class="body-text">{{ detail.synthesis.enemyName || "未填写" }}</p>
+              </div>
+              <div class="record-detail-review__block">
+                <span class="record-detail-review__label">N3 反愿景压缩</span>
+                <p class="body-text">{{ detail.synthesis.antiVisionMantra || "未填写" }}</p>
+              </div>
+              <div class="record-detail-review__block">
+                <span class="record-detail-review__label">N4 愿景 MVP</span>
+                <p class="body-text">{{ detail.synthesis.visionMantra || "未填写" }}</p>
+              </div>
+              <div class="record-detail-review__block">
+                <span class="record-detail-review__label">N5 三透镜</span>
+                <p class="body-text">一年:{{ detail.synthesis.yearLens || "—" }}</p>
+                <p class="body-text">一月:{{ detail.synthesis.monthLens || "—" }}</p>
+                <p
+                  v-if="detail.synthesis.tomorrowBlocks.length"
+                  class="body-text"
+                >
+                  明日时间块:
+                </p>
+                <ul class="record-detail-blocks">
+                  <li
+                    v-for="b in detail.synthesis.tomorrowBlocks"
+                    :key="b.id"
+                  >
+                    {{ b.title }}<span v-if="b.timeHint"> · {{ b.timeHint }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </GlassCard>
+
+          <GlassCard v-if="!detail.synthesis">
+            <SectionLabel :icon="Moon">夜间综合</SectionLabel>
+            <EmptyState :icon="Moon" title="这一天还没写夜间综合" />
           </GlassCard>
 
           <GlassCard v-if="detail.actionLogs.length">
@@ -196,7 +234,9 @@ import {
   LineChart,
   Moon,
   NotebookPen,
+  Sun,
   Target,
+  Telescope,
 } from "lucide-vue-next";
 import {
   parseDateKey,
@@ -242,9 +282,10 @@ const scoreLabel = computed(() =>
 
 const scoreHint = computed(() => {
   if (detail.value.alignmentScore === null) return "这一天没有形成评分。";
-  if (detail.value.alignmentScore >= 80) return "稳定推进:行动和身份高度对齐。";
-  if (detail.value.alignmentScore >= 60) return "基本对齐:主要方向在线。";
-  return "偏离:这一天更容易被惯性、分心或拖延带走。";
+  if (detail.value.alignmentScore >= 70) return "稳定推进:留下了多种推进证据。";
+  if (detail.value.alignmentScore >= 40) return "在线:有真实动作,还能再压实。";
+  if (detail.value.alignmentScore > 0) return "微弱推进:留下了证据,但还很轻。";
+  return "这一天没有留下推进证据。";
 });
 
 const hasAnyData = computed(
@@ -253,7 +294,8 @@ const hasAnyData = computed(
     detail.value.completedProofCount > 0 ||
     detail.value.todayNote.trim().length > 0 ||
     detail.value.reminderActions.length > 0 ||
-    detail.value.hasNightReview ||
+    Boolean(detail.value.synthesis) ||
+    detail.value.dayPromptResponses.length > 0 ||
     detail.value.actionLogs.length > 0,
 );
 
@@ -343,6 +385,41 @@ function jump(next: string | null) {
 .record-detail-action__meta {
   color: var(--si-color-text-faint);
   font-size: var(--si-font-xs);
+}
+
+.record-detail-prompt {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-inset);
+  font-size: var(--si-font-sm);
+  color: var(--si-color-text-soft);
+  line-height: 1.55;
+}
+
+.record-detail-prompt__key {
+  color: var(--si-color-brand-text);
+  font-size: var(--si-font-xs);
+  font-weight: var(--si-weight-semibold);
+}
+
+.record-detail-prompt__answer {
+  color: var(--si-color-text-soft);
+}
+
+.record-detail-prompt__meta {
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-xs);
+}
+
+.record-detail-blocks {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--si-color-text-soft);
+  font-size: var(--si-font-sm);
+  line-height: 1.6;
 }
 
 .record-detail-review {

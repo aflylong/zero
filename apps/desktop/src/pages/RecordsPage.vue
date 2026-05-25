@@ -3,7 +3,7 @@
     <PageHeader
       title="记录"
       kicker="RECORDS"
-      description="连续天数和轨迹。点击任一格查看那一天的完整快照。"
+      description="快乐存在于进步之中。 这里是你这一年的连续证据,点击任一格看那天的完整快照。"
     />
 
     <PageBody>
@@ -41,12 +41,20 @@
 
             <div class="records-legend">
               <span class="records-legend__item">
-                <span class="records-legend__swatch records-legend__swatch--aligned" />
-                稳定推进
+                <span class="records-legend__swatch records-legend__swatch--strong" />
+                70+
+              </span>
+              <span class="records-legend__item">
+                <span class="records-legend__swatch records-legend__swatch--mid" />
+                40-69
+              </span>
+              <span class="records-legend__item">
+                <span class="records-legend__swatch records-legend__swatch--faint" />
+                有证据 1-39
               </span>
               <span class="records-legend__item">
                 <span class="records-legend__swatch records-legend__swatch--off" />
-                偏离
+                未留下证据
               </span>
               <span class="records-legend__item">
                 <span class="records-legend__dot" />
@@ -96,13 +104,45 @@
                 <span class="records-stat__value">
                   {{ windowSummary.completedDays }}/{{ windowSummary.trackedDays }}
                 </span>
-                <span class="records-stat__label">对齐天数</span>
+                <span class="records-stat__label">有证据天数</span>
               </div>
               <div class="records-stat">
                 <span class="records-stat__value">{{ overallSummary.bestStreak }}</span>
                 <span class="records-stat__label">最佳连续</span>
               </div>
             </div>
+          </GlassCard>
+
+          <GlassCard>
+            <SectionLabel :icon="Archive">过往目标</SectionLabel>
+            <div v-if="goalHistory.length" class="records-goals">
+              <article
+                v-for="goal in goalHistory.slice(0, 6)"
+                :key="goal.id"
+                class="records-goal"
+                :class="`records-goal--${goal.status}`"
+              >
+                <header class="records-goal__head">
+                  <span class="records-goal__type">
+                    {{ goal.type === "year" ? "一年" : "一月" }}
+                  </span>
+                  <span class="records-goal__status">{{ statusLabel(goal.status) }}</span>
+                </header>
+                <p class="records-goal__title">{{ goal.title }}</p>
+                <p
+                  v-if="goal.reflection"
+                  class="records-goal__reflection"
+                >
+                  {{ goal.reflection }}
+                </p>
+                <p class="records-goal__meta">
+                  归档于 {{ formatDate(goal.endedAt) }}
+                </p>
+              </article>
+            </div>
+            <p v-else class="muted-text">
+              还没有归档过目标。在「编辑道路」里点「归档」就能把当前目标存进历史。
+            </p>
           </GlassCard>
         </aside>
       </div>
@@ -115,6 +155,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import {
   Activity,
+  Archive,
   BarChart3,
   CalendarDays,
   ChevronLeft,
@@ -123,7 +164,7 @@ import {
   LineChart,
   TrendingUp,
 } from "lucide-vue-next";
-import { parseDateKey, tokens, useAppStore } from "@guiling/core";
+import { parseDateKey, tokens, useAppStore, type GoalStatus } from "@guiling/core";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import PageBody from "@/components/layout/PageBody.vue";
 import GlassCard from "@/components/common/GlassCard.vue";
@@ -171,15 +212,15 @@ const rangeLabel = computed(
 const trendHeadline = computed(() => {
   if (!windowSummary.value.trackedDays) return "这个窗口里还没留下记录。";
   if (windowSummary.value.averageAlignment >= 80) return "这段时间整体推进很稳。";
-  if (windowSummary.value.averageAlignment >= 60) return "整体在线,还有些松动。";
-  return "这段时间偏离明显,需要更主动地纠偏。";
+  if (windowSummary.value.averageAlignment >= 50) return "整体在线,还有些松动。";
+  return "这段时间偏离明显,做一个最小杠杆就能拉回来。";
 });
 
 const trendBody = computed(() => {
   if (!windowSummary.value.trackedDays) {
-    return "开始用今日页、提醒和夜间复盘后,这里会长出可翻看的真实轨迹。";
+    return "开始用今日页、提醒和夜间综合后,这里会长出可翻看的真实轨迹。";
   }
-  return `当前窗口记录了 ${windowSummary.value.trackedDays} 天,其中 ${windowSummary.value.completedDays} 天达到 60 分以上。`;
+  return `当前窗口记录了 ${windowSummary.value.trackedDays} 天,其中 ${windowSummary.value.completedDays} 天留下了真实推进证据。`;
 });
 
 const streakCopy = computed(() => {
@@ -198,6 +239,25 @@ function shift(offset: number) {
 
 function openDetail(dateKey: string) {
   router.push({ name: "record-detail", params: { dateKey } });
+}
+
+const goalHistory = computed(() => store.getGoalHistory());
+
+function statusLabel(s: GoalStatus): string {
+  if (s === "completed") return "完成";
+  if (s === "habituated") return "习惯化";
+  if (s === "abandoned") return "放弃";
+  return "进行中";
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  } catch {
+    return "—";
+  }
 }
 </script>
 
@@ -279,14 +339,24 @@ function openDetail(dateKey: string) {
   background: var(--si-color-surface-card);
 }
 
-.records-legend__swatch--aligned {
+.records-legend__swatch--strong {
   border-color: var(--si-color-brand-border);
   background: var(--si-color-brand-bg);
 }
 
+.records-legend__swatch--mid {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(6, 95, 70, 0.2);
+}
+
+.records-legend__swatch--faint {
+  border-color: rgba(16, 185, 129, 0.18);
+  background: rgba(6, 95, 70, 0.1);
+}
+
 .records-legend__swatch--off {
-  border-color: rgba(82, 82, 91, 0.72);
-  background: rgba(39, 39, 42, 0.85);
+  border-color: rgba(82, 82, 91, 0.55);
+  background: var(--si-color-surface-card);
 }
 
 .records-legend__dot {
@@ -339,6 +409,67 @@ function openDetail(dateKey: string) {
 }
 
 .records-stat__label {
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-xs);
+}
+
+.records-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.records-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--si-color-border-subtle);
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-card-soft);
+}
+
+.records-goal__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--si-font-xs);
+  color: var(--si-color-text-faint);
+  letter-spacing: 1px;
+}
+
+.records-goal__type {
+  color: var(--si-color-brand-text);
+  font-weight: var(--si-weight-semibold);
+}
+
+.records-goal--completed .records-goal__status {
+  color: var(--si-color-brand-text);
+}
+
+.records-goal--habituated .records-goal__status {
+  color: var(--si-color-info);
+}
+
+.records-goal--abandoned .records-goal__status {
+  color: var(--si-color-warning);
+}
+
+.records-goal__title {
+  margin: 0;
+  color: var(--si-color-text-main);
+  font-size: var(--si-font-md);
+  font-weight: var(--si-weight-medium);
+}
+
+.records-goal__reflection {
+  margin: 0;
+  color: var(--si-color-text-soft);
+  font-size: var(--si-font-sm);
+  line-height: 1.6;
+}
+
+.records-goal__meta {
+  margin: 0;
   color: var(--si-color-text-faint);
   font-size: var(--si-font-xs);
 }

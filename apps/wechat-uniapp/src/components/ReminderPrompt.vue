@@ -1,29 +1,49 @@
 <template>
   <view v-if="prompt" class="glass-card prompt">
     <view class="prompt__meta">
-      <text class="section-label prompt__label">{{ prompt.kind === "night" ? "夜间复盘" : "白天提醒" }}</text>
-      <text class="prompt__time">{{ prompt.dueAtLabel }}</text>
+      <text class="section-label prompt__label">{{ kindLabel }}</text>
+      <text class="prompt__time">{{ prompt && prompt.dueAtLabel }}</text>
     </view>
-    <text class="prompt__title">{{ prompt.label }}</text>
-    <text class="body-text">{{ prompt.message }}</text>
+    <text class="prompt__title">{{ prompt && prompt.label }}</text>
+    <text class="body-text">{{ promptBody }}</text>
     <view class="action-row prompt__actions">
-      <button class="pill-button" @tap="$emit('action', prompt.ruleId, 'complete')">我现在去做</button>
-      <button class="ghost-button" @tap="$emit('action', prompt.ruleId, 'snooze')">30 分钟后再提醒</button>
-      <button class="ghost-button" @tap="$emit('action', prompt.ruleId, 'skip')">今天跳过</button>
+      <button class="pill-button" @tap="onAction('complete')">我现在就做</button>
+      <button class="ghost-button" @tap="onAction('snooze')">30 分钟后</button>
+      <button class="ghost-button" @tap="onAction('skip')">今天跳过</button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { ReminderAction, ReminderPrompt } from "@/types/app";
 
-defineProps<{
+const props = defineProps<{
   prompt: ReminderPrompt | null;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "action", ruleId: string, action: ReminderAction): void;
 }>();
+
+const kindLabel = computed(() => {
+  const k = props.prompt?.kind;
+  if (k === "morning") return "早晨开掘";
+  if (k === "night") return "夜间综合";
+  if (k === "commute") return "通勤反思";
+  return "白天打断";
+});
+
+const promptBody = computed(() => {
+  const p = props.prompt;
+  if (!p) return "";
+  return p.question || p.message;
+});
+
+function onAction(action: ReminderAction) {
+  if (!props.prompt) return;
+  emit("action", props.prompt.ruleId, action);
+}
 </script>
 
 <style scoped lang="scss">

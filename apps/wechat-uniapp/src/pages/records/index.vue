@@ -6,7 +6,7 @@
           <view class="records-hero__icon">
             <view class="records-hero__icon-core" />
           </view>
-          <text class="records-hero__label-text">连续记录</text>
+          <text class="records-hero__label-text">连续推进</text>
         </view>
 
         <view class="records-hero__value-row">
@@ -25,7 +25,7 @@
           </view>
           <view class="records-metric">
             <text class="records-metric__value">{{ windowSummary.completedDays }}/{{ windowSummary.trackedDays }}</text>
-            <text class="records-metric__label">对齐</text>
+            <text class="records-metric__label">有证据</text>
           </view>
           <view class="records-metric">
             <text class="records-metric__value">{{ overallSummary.bestStreak }}</text>
@@ -65,7 +65,7 @@
         <view class="records-section-head">
           <view class="records-section-head__copy">
             <SectionLabel>35 天热力格</SectionLabel>
-            <text class="records-section-head__title">点任意一天，查看评分、提醒处理与复盘</text>
+            <text class="records-section-head__title">点任意一天,查看评分、提醒处理与综合</text>
           </view>
         </view>
 
@@ -77,18 +77,45 @@
 
         <view class="records-legend">
           <view class="records-legend__item">
-            <view class="records-legend__swatch records-legend__swatch--aligned" />
-            <text class="records-legend__text">稳定推进</text>
+            <view class="records-legend__swatch records-legend__swatch--strong" />
+            <text class="records-legend__text">70+</text>
+          </view>
+          <view class="records-legend__item">
+            <view class="records-legend__swatch records-legend__swatch--mid" />
+            <text class="records-legend__text">40-69</text>
+          </view>
+          <view class="records-legend__item">
+            <view class="records-legend__swatch records-legend__swatch--faint" />
+            <text class="records-legend__text">1-39</text>
           </view>
           <view class="records-legend__item">
             <view class="records-legend__swatch records-legend__swatch--off" />
-            <text class="records-legend__text">偏离</text>
-          </view>
-          <view class="records-legend__item">
-            <view class="records-legend__dot" />
-            <text class="records-legend__text">已写夜间复盘</text>
+            <text class="records-legend__text">未留下</text>
           </view>
         </view>
+      </GlassCard>
+
+      <GlassCard card-class="records-card">
+        <SectionLabel>过往目标</SectionLabel>
+        <view v-if="goalHistory.length" class="records-goals">
+          <view
+            v-for="goal in goalHistory.slice(0, 6)"
+            :key="goal.id"
+            class="records-goal"
+            :class="`records-goal--${goal.status}`"
+          >
+            <view class="records-goal__head">
+              <text class="records-goal__type">{{ goal.type === "year" ? "一年" : "一月" }}</text>
+              <text class="records-goal__status">{{ statusLabel(goal.status) }}</text>
+            </view>
+            <text class="records-goal__title">{{ goal.title }}</text>
+            <text v-if="goal.reflection" class="records-goal__reflection">{{ goal.reflection }}</text>
+            <text class="records-goal__meta">归档于 {{ formatDate(goal.endedAt) }}</text>
+          </view>
+        </view>
+        <text v-else class="muted-text">
+          还没有归档过目标。在「编辑道路」里点「归档」就能把当前目标存进历史。
+        </text>
       </GlassCard>
     </view>
   </PageShell>
@@ -102,21 +129,17 @@ import HeatmapGrid from "@/components/HeatmapGrid.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { parseDateKey } from "@/services/date";
-import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
+import type { GoalStatus } from "@/types/app";
 
 const store = useAppStore();
 
 const todayDateKey = computed(() => store.state.activeDateKey);
 const recordWindow = computed(() =>
-  store.getRecordWindow({
-    endDateKey: store.state.recordWindowEndDateKey,
-  }),
+  store.getRecordWindow({ endDateKey: store.state.recordWindowEndDateKey }),
 );
 const overallSummary = computed(() =>
-  store.getRecordSummary({
-    endDateKey: todayDateKey.value,
-  }),
+  store.getRecordSummary({ endDateKey: todayDateKey.value }),
 );
 const windowSummary = computed(() =>
   store.getRecordSummary({
@@ -128,58 +151,60 @@ const activeHeatmapDate = computed(() =>
   recordWindow.value.endDateKey === todayDateKey.value ? todayDateKey.value : "",
 );
 
-const windowRangeLabel = computed(() =>
-  `${formatRangeDate(recordWindow.value.startDateKey)} - ${formatRangeDate(recordWindow.value.endDateKey)}`,
+const windowRangeLabel = computed(
+  () =>
+    `${formatRangeDate(recordWindow.value.startDateKey)} - ${formatRangeDate(recordWindow.value.endDateKey)}`,
 );
 
 const streakDescription = computed(() => {
-  if (!store.state.data.onboardingCompleted) {
-    return "先完成初始化，真实记录会从今天开始累积。";
-  }
-
   if (overallSummary.value.currentStreak > 0) {
-    return "连续性正在形成，你留下的每一天都在抬高身份可信度。";
+    return "连续性正在形成,你留下的每一天都在抬高身份可信度。";
   }
-
   if (overallSummary.value.trackedDays > 0) {
-    return "轨迹没有丢，只是需要从今天重新把连续性拉起来。";
+    return "轨迹没有丢,只是需要从今天重新把连续性拉起来。";
   }
-
-  return "先留下第一条快照，记录系统才会开始发力。";
+  return "先留下第一条快照,记录系统才会开始发力。";
 });
 
 const trendHeadline = computed(() => {
-  if (!windowSummary.value.trackedDays) {
-    return "这个窗口里还没有留下真实记录。";
-  }
-
-  if (windowSummary.value.averageAlignment >= 80) {
-    return "这段时间整体推进很稳。";
-  }
-
-  if (windowSummary.value.averageAlignment >= 60) {
-    return "这段时间整体在线，但还有一些松动。";
-  }
-
-  return "这段时间偏离比较明显，需要更主动地纠偏。";
+  if (!windowSummary.value.trackedDays) return "这个窗口里还没留下记录。";
+  if (windowSummary.value.averageAlignment >= 80) return "这段时间整体推进很稳。";
+  if (windowSummary.value.averageAlignment >= 50) return "整体在线,还有些松动。";
+  return "这段时间偏离明显,做一个最小杠杆就能拉回来。";
 });
 
 const trendBody = computed(() => {
   if (!windowSummary.value.trackedDays) {
-    return "开始使用今日页、提醒和夜间复盘后，这里会长出可翻看的真实轨迹。";
+    return "开始用今日页、提醒和夜间综合后,这里会长出可翻看的真实轨迹。";
   }
-
-  return `当前窗口里记录了 ${windowSummary.value.trackedDays} 天，其中 ${windowSummary.value.completedDays} 天达到 60 分以上；点开任意日期可以看当天评分、提醒处理和夜间复盘。`;
+  return `当前窗口记录了 ${windowSummary.value.trackedDays} 天,其中 ${windowSummary.value.completedDays} 天留下了真实推进证据。`;
 });
+
+const goalHistory = computed(() => store.getGoalHistory());
+
+function statusLabel(s: GoalStatus): string {
+  if (s === "completed") return "完成";
+  if (s === "habituated") return "习惯化";
+  if (s === "abandoned") return "放弃";
+  return "进行中";
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  } catch {
+    return "—";
+  }
+}
 
 function shiftWindow(offsetDays: number) {
   store.shiftRecordWindow(offsetDays);
 }
 
 function openRecordDetail(dateKey: string) {
-  uni.navigateTo({
-    url: `/pages/record-detail/index?date=${dateKey}`,
-  });
+  uni.navigateTo({ url: `/pages/record-detail/index?date=${dateKey}` });
 }
 
 function formatRangeDate(dateKey: string) {
@@ -189,9 +214,6 @@ function formatRangeDate(dateKey: string) {
 
 onShow(() => {
   store.initialize();
-  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
-    return;
-  }
 });
 </script>
 
@@ -229,23 +251,11 @@ onShow(() => {
   background: rgba(251, 146, 60, 0.12);
 }
 
-.records-hero__icon::before {
-  content: "";
-  position: absolute;
-  width: 24rpx;
-  height: 30rpx;
-  border-radius: 18rpx 18rpx 18rpx 6rpx;
-  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
-  transform: rotate(-24deg) translateY(-2rpx);
-}
-
 .records-hero__icon-core {
-  position: absolute;
-  width: 12rpx;
-  height: 18rpx;
-  border-radius: 999rpx 999rpx 999rpx 4rpx;
-  background: rgba(255, 237, 213, 0.88);
-  transform: rotate(-20deg) translate(-2rpx, -2rpx);
+  width: 16rpx;
+  height: 22rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
 }
 
 .records-hero__label-text {
@@ -261,7 +271,7 @@ onShow(() => {
 
 .records-hero__value {
   color: #fff7ed;
-  font-size: 108rpx;
+  font-size: 100rpx;
   line-height: 0.92;
   font-weight: 300;
 }
@@ -269,7 +279,7 @@ onShow(() => {
 .records-hero__unit {
   margin-bottom: 10rpx;
   color: #71717a;
-  font-size: 34rpx;
+  font-size: 30rpx;
 }
 
 .records-hero__copy {
@@ -281,7 +291,7 @@ onShow(() => {
 .records-card {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 22rpx;
 }
 
 .records-section-head {
@@ -300,7 +310,7 @@ onShow(() => {
 .records-section-head__title,
 .records-summary__title {
   color: #f5f5f5;
-  font-size: 34rpx;
+  font-size: 30rpx;
   line-height: 1.4;
 }
 
@@ -313,19 +323,15 @@ onShow(() => {
   gap: 18rpx;
   align-items: center;
   justify-content: space-between;
-  padding: 6rpx 0 2rpx;
 }
 
 .records-window-compact__button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72rpx;
-  height: 72rpx;
+  width: 70rpx;
+  height: 70rpx;
   border: 1px solid rgba(63, 63, 70, 0.64);
   border-radius: 999rpx;
   color: #d4d4d8;
-  font-size: 46rpx;
+  font-size: 44rpx;
   line-height: 1;
 }
 
@@ -340,13 +346,11 @@ onShow(() => {
 .records-window-compact__range {
   color: #f5f5f5;
   font-size: 30rpx;
-  line-height: 1.3;
 }
 
 .records-window-compact__hint {
   color: #71717a;
   font-size: 20rpx;
-  line-height: 1.4;
 }
 
 .records-metrics {
@@ -369,53 +373,51 @@ onShow(() => {
 
 .records-metric__value {
   color: #f5f5f5;
-  font-size: 34rpx;
+  font-size: 30rpx;
   line-height: 1.1;
 }
 
 .records-metric__label {
   color: #71717a;
   font-size: 20rpx;
-  line-height: 1.5;
 }
 
 .records-legend {
   display: flex;
-  gap: 20rpx;
+  gap: 18rpx;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .records-legend__item {
   display: inline-flex;
-  gap: 10rpx;
+  gap: 8rpx;
   align-items: center;
 }
 
 .records-legend__swatch {
-  width: 20rpx;
-  height: 20rpx;
-  border: 1px solid rgba(63, 63, 70, 0.72);
-  border-radius: 8rpx;
+  width: 18rpx;
+  height: 18rpx;
+  border: 1px solid rgba(63, 63, 70, 0.55);
+  border-radius: 6rpx;
   background: rgba(24, 24, 27, 0.68);
 }
 
-.records-legend__swatch--aligned {
+.records-legend__swatch--strong {
   border-color: rgba(16, 185, 129, 0.32);
   background: rgba(6, 95, 70, 0.34);
 }
-
-.records-legend__swatch--off {
-  border-color: rgba(82, 82, 91, 0.72);
-  background: rgba(39, 39, 42, 0.85);
+.records-legend__swatch--mid {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(6, 95, 70, 0.20);
 }
-
-.records-legend__dot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 999rpx;
-  background: #34d399;
-  box-shadow: 0 0 16rpx rgba(52, 211, 153, 0.34);
+.records-legend__swatch--faint {
+  border-color: rgba(16, 185, 129, 0.18);
+  background: rgba(6, 95, 70, 0.10);
+}
+.records-legend__swatch--off {
+  border-color: rgba(82, 82, 91, 0.55);
+  background: rgba(24, 24, 27, 0.68);
 }
 
 .records-legend__text {
@@ -426,6 +428,49 @@ onShow(() => {
 .records-summary {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 14rpx;
+}
+
+.records-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.records-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding: 14rpx 16rpx;
+  border: 1px solid rgba(39, 39, 42, 0.72);
+  border-radius: 14rpx;
+  background: rgba(24, 24, 27, 0.36);
+}
+.records-goal__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20rpx;
+  color: #71717a;
+}
+.records-goal__type {
+  color: #d1fae5;
+  font-weight: 600;
+}
+.records-goal--completed .records-goal__status { color: #d1fae5; }
+.records-goal--habituated .records-goal__status { color: #60a5fa; }
+.records-goal--abandoned .records-goal__status { color: #fb923c; }
+
+.records-goal__title {
+  color: #f5f5f5;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+.records-goal__reflection {
+  color: #d4d4d8;
+  font-size: 22rpx;
+  line-height: 1.55;
+}
+.records-goal__meta {
+  color: #71717a;
+  font-size: 20rpx;
 }
 </style>

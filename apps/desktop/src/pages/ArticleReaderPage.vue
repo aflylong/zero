@@ -75,6 +75,14 @@
             <span>{{ currentSection.accent }}</span>
           </blockquote>
 
+          <div v-if="authoritative" class="reader-article__authority">
+            <SectionLabel :icon="Sparkles">章节权威引文</SectionLabel>
+            <p class="reader-article__authority-text">「{{ authoritative.text }}」</p>
+            <p class="reader-article__authority-author">—— {{ authoritative.author }}</p>
+          </div>
+
+          <KnowledgeCards :section-id="currentSection.id" />
+
           <div class="reader-article__body">
             <p
               v-for="p in currentSection.paragraphs"
@@ -89,8 +97,25 @@
             </p>
           </div>
 
+          <section class="reader-article__notes">
+            <div class="reader-article__notes-head">
+              <SectionLabel :icon="NotebookPen">我的笔记</SectionLabel>
+              <span class="faint-text">{{ noteDraft.length }}/600</span>
+            </div>
+            <textarea
+              v-model="noteDraft"
+              class="form-textarea reader-article__notes-textarea"
+              maxlength="600"
+              placeholder="原文建议你在读完这章后停一下,把「打到你的那句话」写下来。这条笔记只属于你。"
+              @blur="saveNote"
+            />
+            <p class="faint-text reader-article__notes-hint">
+              {{ noteDirty ? "失焦自动保存" : "已同步到本地" }}
+            </p>
+          </section>
+
           <p class="faint-text reader-article__note">
-            原文章节内置在本地,阅读进度会真实保存。
+            原文章节内置在本地。读完最后一章,可以进入「一天流程」开始 22 题深挖。
           </p>
         </article>
       </PageBody>
@@ -99,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   BookOpenText,
@@ -109,11 +134,14 @@ import {
   ChevronRight,
   Dot,
   Link as LinkIcon,
+  NotebookPen,
   Quote,
+  Sparkles,
 } from "lucide-vue-next";
 import {
   articleSections,
   articleSourceUrl,
+  findAuthoritativeQuote,
   tokens,
   useAppStore,
   type ArticleParagraph,
@@ -121,6 +149,7 @@ import {
 import PageHeader from "@/components/layout/PageHeader.vue";
 import PageBody from "@/components/layout/PageBody.vue";
 import SectionLabel from "@/components/common/SectionLabel.vue";
+import KnowledgeCards from "@/components/common/KnowledgeCards.vue";
 
 const iconStroke = tokens.iconStrokeWidth;
 const store = useAppStore();
@@ -138,9 +167,40 @@ const isCompleted = computed(() => completedIds.value.includes(currentSection.va
 const hasPrev = computed(() => currentIndex.value > 0);
 const hasNext = computed(() => currentIndex.value < totalSections - 1);
 
+const authoritative = computed(() => findAuthoritativeQuote(currentSection.value.id));
+
+const noteDraft = ref("");
+const noteDirty = ref(false);
+
+function syncNoteFromStore() {
+  noteDraft.value =
+    store.state.data.articleProgress.notes?.[currentSection.value.id] ?? "";
+  noteDirty.value = false;
+}
+
+watch(currentSection, syncNoteFromStore, { immediate: true });
+
+watch(noteDraft, () => {
+  noteDirty.value = true;
+});
+
+function saveNote() {
+  if (!noteDirty.value) return;
+  store.updateArticleNote(currentSection.value.id, noteDraft.value);
+  noteDirty.value = false;
+}
+
+const journeyStarted = computed(() =>
+  Boolean(store.state.data.morningExcavation.startedAt),
+);
+const journeyCompleted = computed(() => store.state.data.journeyCompleted);
+
 const nextButtonLabel = computed(() => {
   if (hasNext.value) return "下一章";
-  if (!store.state.data.onboardingCompleted) return "开始设置你的系统";
+  if (!journeyCompleted.value) {
+    return journeyStarted.value ? "继续未完成的一天流程" : "开始今天的一天流程";
+  }
+  if (!store.state.data.onboardingCompleted) return "进入快速设置";
   return "完成阅读";
 });
 
@@ -160,6 +220,7 @@ function tocItemClass(id: string) {
 }
 
 function open(id: string) {
+  saveNote();
   store.openArticleSection(id);
 }
 
@@ -173,12 +234,17 @@ function markRead() {
 }
 
 function nextAction() {
+  saveNote();
   if (!isCompleted.value) store.markArticleSectionRead(currentSection.value.id);
   if (hasNext.value) {
     open(sections[currentIndex.value + 1].id);
     return;
   }
-  // 最后一章读完:如果还没完成 onboarding,引导去设置
+  // 最后一章读完:推荐进入一天流程
+  if (!journeyCompleted.value) {
+    router.push("/journey/morning");
+    return;
+  }
   if (!store.state.data.onboardingCompleted) {
     router.push("/onboarding");
   }
@@ -328,6 +394,30 @@ async function copyLink() {
   border-radius: 0 var(--si-radius-lg) var(--si-radius-lg) 0;
 }
 
+.reader-article__authority {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--si-color-border-subtle);
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-card-soft);
+}
+
+.reader-article__authority-text {
+  margin: 0;
+  color: var(--si-color-text-main);
+  font-size: var(--si-font-md);
+  line-height: 1.7;
+}
+
+.reader-article__authority-author {
+  margin: 0;
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-xs);
+  text-align: right;
+}
+
 .reader-article__body {
   display: flex;
   flex-direction: column;
@@ -358,6 +448,33 @@ async function copyLink() {
   margin-top: 8px;
   color: var(--si-color-brand);
   flex-shrink: 0;
+}
+
+.reader-article__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--si-color-border-subtle);
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-inset);
+}
+
+.reader-article__notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reader-article__notes-textarea {
+  min-height: 120px;
+  font-size: var(--si-font-sm);
+  line-height: 1.65;
+}
+
+.reader-article__notes-hint {
+  margin: 0;
+  font-size: var(--si-font-xs);
 }
 
 .reader-article__note {

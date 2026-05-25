@@ -19,6 +19,24 @@
       }
     },
     {
+      "path": "pages/journey-morning/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/journey-day/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/journey-night/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/path/index",
       "style": {
         "navigationStyle": "custom"
@@ -61,12 +79,6 @@
       }
     },
     {
-      "path": "pages/night-review/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/today-note/index",
       "style": {
         "navigationStyle": "custom"
@@ -74,6 +86,12 @@
     },
     {
       "path": "pages/reminder-settings/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/privacy/index",
       "style": {
         "navigationStyle": "custom"
       }

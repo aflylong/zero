@@ -15,11 +15,20 @@ import IdentityEditorPage from "@/pages/IdentityEditorPage.vue";
 import ArticleReaderPage from "@/pages/ArticleReaderPage.vue";
 import RecordDetailPage from "@/pages/RecordDetailPage.vue";
 import SettingsPage from "@/pages/SettingsPage.vue";
+import PrivacyPage from "@/pages/PrivacyPage.vue";
+import JourneyMorningPage from "@/pages/JourneyMorningPage.vue";
+import JourneyDayPage from "@/pages/JourneyDayPage.vue";
+import JourneyNightPage from "@/pages/JourneyNightPage.vue";
 
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/today" },
   { path: "/welcome", name: "welcome", component: WelcomePage },
   { path: "/onboarding", name: "onboarding", component: OnboardingPage },
+
+  // 一天流程(原文 Part 1 / 2 / 3)
+  { path: "/journey/morning", name: "journey-morning", component: JourneyMorningPage },
+  { path: "/journey/day", name: "journey-day", component: JourneyDayPage },
+  { path: "/journey/night", name: "journey-night", component: JourneyNightPage },
 
   { path: "/today", name: "today", component: TodayPage, meta: { tab: "today" } },
   { path: "/today/note", name: "today-note", component: TodayNotePage },
@@ -37,6 +46,7 @@ const routes: RouteRecordRaw[] = [
   { path: "/identity/edit", name: "identity-editor", component: IdentityEditorPage },
 
   { path: "/settings", name: "settings", component: SettingsPage },
+  { path: "/settings/privacy", name: "privacy", component: PrivacyPage },
 
   { path: "/:pathMatch(.*)*", redirect: "/today" },
 ];
@@ -46,24 +56,27 @@ export const router = createRouter({
   routes,
 });
 
-// 首次进入(未完成 onboarding)时,自动跳到 Welcome 页。
-// 已完成 onboarding 的用户直接进 Today,不会再看到 Welcome。
+/**
+ * 软引导而非硬封锁:
+ *   首次启动(没填过 onboarding 也没启动过 journey)→ 跳到 welcome,让用户选;
+ *   一旦用户做过任何一种(填过 onboarding 或 跑过 journey),不再被 welcome 拦截;
+ *   不再像旧版那样"未完成 onboarding 时只能停在 welcome / onboarding / article-reader"。
+ */
 router.beforeEach((to) => {
   const store = useAppStore();
-  const completed = store.state.data.onboardingCompleted;
+  const data = store.state.data;
+  const ever =
+    data.onboardingCompleted ||
+    data.journeyCompleted ||
+    Boolean(data.morningExcavation.startedAt);
 
-  // 未完成 onboarding 时,只允许访问 welcome / onboarding / article-reader
-  if (
-    !completed &&
-    to.name !== "welcome" &&
-    to.name !== "onboarding" &&
-    to.name !== "article-reader"
-  ) {
+  if (!ever && to.name !== "welcome" && to.name !== "onboarding" &&
+      to.name !== "article-reader" && to.name !== "privacy" &&
+      !String(to.name ?? "").startsWith("journey")) {
     return { name: "welcome" };
   }
 
-  // 已完成 onboarding 时,不再显示 welcome
-  if (completed && to.name === "welcome") {
+  if (ever && to.name === "welcome") {
     return { name: "today" };
   }
 

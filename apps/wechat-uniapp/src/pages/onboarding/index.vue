@@ -1,8 +1,8 @@
 <template>
-  <PageShell title="初始化" topbar-mode="tab" compact>
+  <PageShell title="快速设置" topbar-mode="secondary" back-url="/pages/today/index" compact>
     <view class="onboarding-page">
       <view class="onboarding-hero">
-        <SectionLabel>三步启动</SectionLabel>
+        <SectionLabel>四步启动</SectionLabel>
         <text class="onboarding-hero__title">{{ stepTitle }}</text>
         <text class="muted-text">{{ stepDescription }}</text>
 
@@ -23,26 +23,33 @@
         </view>
       </view>
 
+      <text class="onboarding-tip">
+        想跑完整流程(原文 22 题)?
+        <text class="onboarding-tip__link" @tap="goJourney">点这里去「一天流程」</text>
+      </text>
+
       <GlassCard v-if="currentStep === 0" card-class="onboarding-card">
         <view class="field-block">
           <text class="field-label">愿景</text>
           <textarea
-            v-model="visionText"
+            :value="visionText"
             class="textarea-shell"
             maxlength="260"
             auto-height
             placeholder="写下你真正想去的生活画面。"
+            @input="onVisionInput($event)"
           />
         </view>
 
         <view class="field-block">
           <text class="field-label">反愿景</text>
           <textarea
-            v-model="antiVisionText"
+            :value="antiVisionText"
             class="textarea-shell"
             maxlength="220"
             auto-height
             placeholder="写下你再也不想回去的旧状态。"
+            @input="onAntiVisionInput($event)"
           />
         </view>
       </GlassCard>
@@ -51,21 +58,23 @@
         <view class="field-block">
           <text class="field-label">身份句</text>
           <input
-            v-model="identityStatement"
+            :value="identityStatement"
             class="input-shell"
             maxlength="40"
-            placeholder="例如：我是毫不犹豫采取大量行动的人"
+            placeholder="例如:我是想到就动、绝不拖到明天的人"
+            @input="onIdentityInput($event)"
           />
         </view>
 
         <view class="field-block">
-          <text class="field-label">反身份</text>
+          <text class="field-label">必须放弃的旧身份</text>
           <textarea
-            v-model="antiIdentityText"
+            :value="antiIdentityText"
             class="textarea-shell"
             maxlength="220"
             auto-height
             placeholder="写清楚你不再愿意继续成为谁。"
+            @input="onAntiIdentityInput($event)"
           />
         </view>
       </GlassCard>
@@ -75,17 +84,19 @@
           <text class="field-label">一年目标 · 主线任务</text>
           <text class="muted-text">一年后你必须看到什么变化,才算真的打破了旧模式?</text>
           <input
-            v-model="yearGoal"
+            :value="yearGoal"
             class="input-shell"
             maxlength="32"
             placeholder="例如:用 365 天彻底重建日常系统"
+            @input="onYearGoalInput($event)"
           />
           <textarea
-            v-model="yearGoalDescription"
+            :value="yearGoalDescription"
             class="textarea-shell onboarding-card__small-textarea"
             maxlength="200"
             auto-height
             placeholder="一年后什么必须为真,你才会承认自己赢了?"
+            @input="onYearGoalDescInput($event)"
           />
         </view>
 
@@ -93,17 +104,19 @@
           <text class="field-label">一月项目 · Boss 战</text>
           <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
           <input
-            v-model="monthProject"
+            :value="monthProject"
             class="input-shell"
             maxlength="32"
             placeholder="例如:连续 30 天跑通完整闭环"
+            @input="onMonthProjectInput($event)"
           />
           <textarea
-            v-model="monthProjectDescription"
+            :value="monthProjectDescription"
             class="textarea-shell onboarding-card__small-textarea"
             maxlength="160"
             auto-height
             placeholder="做完这件事,你会拿到什么经验值?"
+            @input="onMonthDescInput($event)"
           />
         </view>
       </GlassCard>
@@ -129,24 +142,28 @@
         <view class="reminder-pair">
           <view class="reminder-pair__item">
             <view class="reminder-pair__copy">
-              <text class="field-label">白天提醒</text>
-              <text class="muted-text">把你从惯性里拉回来。</text>
+              <text class="field-label">早晨开掘</text>
+              <text class="muted-text">睁开眼就先问自己几个问题。</text>
             </view>
-            <picker mode="time" :value="dayReminderTime" @change="handleDayTimeChange">
-              <view class="tag-chip tag-chip--active reminder-pair__time">{{ dayReminderTime }}</view>
+            <picker mode="time" :value="morningReminderTime" @change="handleMorningTimeChange">
+              <view class="tag-chip tag-chip--active reminder-pair__time">{{ morningReminderTime }}</view>
             </picker>
           </view>
 
           <view class="reminder-pair__item">
             <view class="reminder-pair__copy">
-              <text class="field-label">夜间复盘</text>
-              <text class="muted-text">把今天整理成明天的修正。</text>
+              <text class="field-label">夜间综合</text>
+              <text class="muted-text">把今天压成明天的方向。</text>
             </view>
             <picker mode="time" :value="nightReminderTime" @change="handleNightTimeChange">
               <view class="tag-chip tag-chip--active reminder-pair__time">{{ nightReminderTime }}</view>
             </picker>
           </view>
         </view>
+
+        <text class="muted-text">
+          白天 6 个时间点和 3 个通勤反思会种好默认推送时间。可以在「提醒设置」里随时调整或关闭。
+        </text>
       </GlassCard>
     </view>
 
@@ -177,33 +194,30 @@ import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
+import { dayPrompts } from "@/static/content/dayPrompts";
 import { switchToTab, TODAY_PAGE_PATH } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderRule } from "@/types/app";
 
-type UniValueEvent = Event & {
-  detail?: {
-    value?: string;
-  };
-};
+type UniValueEvent = Event & { detail?: { value?: string } };
 
 const store = useAppStore();
 const currentStep = ref(0);
 const proofTitle = ref("");
 const proofDescription = ref("");
-const dayReminderTime = ref("11:30");
+const morningReminderTime = ref("07:30");
 const nightReminderTime = ref("21:30");
 
 const steps = [
   {
     short: "方向",
-    title: "先写清楚你要去哪里,以及你不要回到哪里。",
-    description: "这一步只定方向,不做长篇设置。",
+    title: "先把方向定住:你要去哪,你不要回到哪。",
+    description: "这一步只定方向,后面再细。",
   },
   {
     short: "身份",
-    title: "用一句话决定你今天要按什么身份行动。",
-    description: "身份句负责拉齐行为,反身份负责阻止你退回旧版本。",
+    title: "用一句话决定你今天起按什么身份行动。",
+    description: "身份句拉齐行为,反身份阻止你退回旧版本。",
   },
   {
     short: "目标",
@@ -212,73 +226,67 @@ const steps = [
   },
   {
     short: "启动",
-    title: "设置今天第一条证明动作和提醒时间。",
-    description: "先让系统跑起来,后续再到道路和身份页细调。",
+    title: "设一条今天的动作和提醒时间。",
+    description: "9 条白天提醒会自动种好。",
   },
 ] as const;
 
-const visionText = computed({
-  get: () => store.state.data.visionProfile.visionText,
-  set: (value: string) => store.updateVisionProfile({ visionText: value }),
-});
+const visionText = computed(() => store.state.data.visionProfile.visionText);
+const antiVisionText = computed(() => store.state.data.visionProfile.antiVisionText);
+const identityStatement = computed(() => store.state.data.identityProfile.statement);
+const antiIdentityText = computed(() => store.state.data.identityProfile.antiIdentityText);
+const yearGoal = computed(() => store.state.data.visionProfile.yearGoal);
+const yearGoalDescription = computed(() => store.state.data.visionProfile.yearGoalDescription);
+const monthProject = computed(() => store.state.data.visionProfile.monthProject);
+const monthProjectDescription = computed(() => store.state.data.visionProfile.monthProjectDescription);
 
-const antiVisionText = computed({
-  get: () => store.state.data.visionProfile.antiVisionText,
-  set: (value: string) => store.updateVisionProfile({ antiVisionText: value }),
-});
+function evtVal(e: UniValueEvent): string {
+  return String(e.detail?.value ?? "");
+}
 
-const identityStatement = computed({
-  get: () => store.state.data.identityProfile.statement,
-  set: (value: string) => store.updateIdentityProfile({ statement: value }),
-});
-
-const antiIdentityText = computed({
-  get: () => store.state.data.identityProfile.antiIdentityText,
-  set: (value: string) => store.updateIdentityProfile({ antiIdentityText: value }),
-});
+function onVisionInput(e: UniValueEvent) {
+  store.updateVisionProfile({ visionText: evtVal(e) });
+}
+function onAntiVisionInput(e: UniValueEvent) {
+  store.updateVisionProfile({ antiVisionText: evtVal(e) });
+}
+function onIdentityInput(e: UniValueEvent) {
+  store.updateIdentityProfile({ statement: evtVal(e) });
+}
+function onAntiIdentityInput(e: UniValueEvent) {
+  store.updateIdentityProfile({ antiIdentityText: evtVal(e) });
+}
+function onYearGoalInput(e: UniValueEvent) {
+  store.updateVisionProfile({ yearGoal: evtVal(e) });
+}
+function onYearGoalDescInput(e: UniValueEvent) {
+  store.updateVisionProfile({ yearGoalDescription: evtVal(e) });
+}
+function onMonthProjectInput(e: UniValueEvent) {
+  store.updateVisionProfile({ monthProject: evtVal(e) });
+}
+function onMonthDescInput(e: UniValueEvent) {
+  store.updateVisionProfile({ monthProjectDescription: evtVal(e) });
+}
 
 const progressPercent = computed(() => ((currentStep.value + 1) / steps.length) * 100);
 const stepTitle = computed(() => steps[currentStep.value]?.title ?? steps[0].title);
 const stepDescription = computed(() => steps[currentStep.value]?.description ?? steps[0].description);
-const yearGoal = computed({
-  get: () => store.state.data.visionProfile.yearGoal,
-  set: (value: string) => store.updateVisionProfile({ yearGoal: value }),
-});
-
-const yearGoalDescription = computed({
-  get: () => store.state.data.visionProfile.yearGoalDescription,
-  set: (value: string) => store.updateVisionProfile({ yearGoalDescription: value }),
-});
-
-const monthProject = computed({
-  get: () => store.state.data.visionProfile.monthProject,
-  set: (value: string) => store.updateVisionProfile({ monthProject: value }),
-});
-
-const monthProjectDescription = computed({
-  get: () => store.state.data.visionProfile.monthProjectDescription,
-  set: (value: string) => store.updateVisionProfile({ monthProjectDescription: value }),
-});
 
 const canProceed = computed(() => {
   if (currentStep.value === 0) {
     return Boolean(visionText.value.trim() && antiVisionText.value.trim());
   }
-
   if (currentStep.value === 1) {
     return Boolean(identityStatement.value.trim() && antiIdentityText.value.trim());
   }
-
   if (currentStep.value === 2) {
     return Boolean(yearGoal.value.trim() && monthProject.value.trim());
   }
-
-  return Boolean(proofTitle.value.trim() && dayReminderTime.value && nightReminderTime.value);
+  return Boolean(
+    proofTitle.value.trim() && morningReminderTime.value && nightReminderTime.value,
+  );
 });
-
-function formatReminder(hour: number, minute: number) {
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
 
 function parseReminder(value: string) {
   const [hour, minute] = value.split(":").map(Number);
@@ -288,24 +296,21 @@ function parseReminder(value: string) {
   };
 }
 
-function eventValue(event: UniValueEvent) {
-  return event.detail?.value ?? "";
-}
-
-function createReminderRule(input: {
-  source?: ReminderRule;
-  kind: "day" | "night";
-  time: string;
+function buildReminder(input: {
+  kind: "morning" | "day" | "commute" | "night";
+  hour: number;
+  minute: number;
   label: string;
   message: string;
+  promptKey?: string;
 }): ReminderRule {
-  const parsed = parseReminder(input.time);
   return {
-    id: input.source?.id ?? `reminder-${input.kind}-onboarding`,
+    id: `reminder-${input.kind}-${input.promptKey ?? Math.random().toString(36).slice(2, 6)}`,
     kind: input.kind,
+    promptKey: input.promptKey,
     label: input.label,
-    hour: parsed.hour,
-    minute: parsed.minute,
+    hour: input.hour,
+    minute: input.minute,
     enabled: true,
     deliveryMode: "in-app",
     subscriptionStatus: "pending",
@@ -314,35 +319,64 @@ function createReminderRule(input: {
   };
 }
 
-function hydrateDrafts() {
-  const activeRule =
-    store.activeProofRules()[0] ??
-    store.state.data.proofRules[0] ??
-    null;
-  const dayReminder =
-    store.state.data.reminderRules.find((rule) => rule.kind === "day") ??
-    null;
-  const nightReminder =
-    store.state.data.reminderRules.find((rule) => rule.kind === "night") ??
-    null;
+function buildAllReminders(): ReminderRule[] {
+  const m = parseReminder(morningReminderTime.value);
+  const n = parseReminder(nightReminderTime.value);
 
-  proofTitle.value = activeRule?.title ?? "";
-  proofDescription.value = activeRule?.description ?? "";
-  dayReminderTime.value = dayReminder ? formatReminder(dayReminder.hour, dayReminder.minute) : "11:30";
-  nightReminderTime.value = nightReminder ? formatReminder(nightReminder.hour, nightReminder.minute) : "21:30";
+  const list: ReminderRule[] = [
+    buildReminder({
+      kind: "morning",
+      hour: m.hour,
+      minute: m.minute,
+      label: "早晨开掘",
+      message: "如果今天什么都不变,我能接受吗?打开「一天流程」继续未答的题。",
+      promptKey: "morning-excavation",
+    }),
+    buildReminder({
+      kind: "night",
+      hour: n.hour,
+      minute: n.minute,
+      label: "夜间综合",
+      message: "把今天压成 5 步:卡点 / 命名敌人 / 反愿景 / 愿景 / 三透镜。",
+      promptKey: "night-synthesis",
+    }),
+  ];
+
+  for (const dp of dayPrompts) {
+    if (dp.kind === "day" && dp.hour !== undefined && dp.minute !== undefined) {
+      list.push(
+        buildReminder({
+          kind: "day",
+          hour: dp.hour,
+          minute: dp.minute,
+          label: dp.label,
+          message: dp.question,
+          promptKey: dp.key,
+        }),
+      );
+    } else if (dp.kind === "commute") {
+      list.push(
+        buildReminder({
+          kind: "commute",
+          hour: 0,
+          minute: 0,
+          label: dp.label,
+          message: dp.question,
+          promptKey: dp.key,
+        }),
+      );
+    }
+  }
+
+  return list;
 }
 
-function detectSuggestedStep() {
-  // 永远从第一步开始,不替用户跳步。
-  return 0;
-}
-
-function handleDayTimeChange(event: UniValueEvent) {
-  dayReminderTime.value = eventValue(event) || dayReminderTime.value;
+function handleMorningTimeChange(event: UniValueEvent) {
+  morningReminderTime.value = evtVal(event) || morningReminderTime.value;
 }
 
 function handleNightTimeChange(event: UniValueEvent) {
-  nightReminderTime.value = eventValue(event) || nightReminderTime.value;
+  nightReminderTime.value = evtVal(event) || nightReminderTime.value;
 }
 
 function goPrevStep() {
@@ -351,10 +385,7 @@ function goPrevStep() {
 
 function goNextStep() {
   if (!canProceed.value) {
-    uni.showToast({
-      title: "先完成当前步骤",
-      icon: "none",
-    });
+    uni.showToast({ title: "先完成当前步骤", icon: "none" });
     return;
   }
 
@@ -363,20 +394,18 @@ function goNextStep() {
     return;
   }
 
-  const existingDayReminder = store.state.data.reminderRules.find((rule) => rule.kind === "day");
-  const existingNightReminder = store.state.data.reminderRules.find((rule) => rule.kind === "night");
-
   store.completeOnboarding({
     visionProfile: {
       ...store.state.data.visionProfile,
+      constraints: [...store.state.data.visionProfile.constraints],
     },
     identityProfile: {
       ...store.state.data.identityProfile,
-      beliefs: [...store.state.data.identityProfile.beliefs],
+      principles: [...store.state.data.identityProfile.principles],
     },
     proofRules: [
       {
-        id: store.activeProofRules()[0]?.id ?? "rule-onboarding-proof",
+        id: "rule-onboarding-proof",
         title: proofTitle.value.trim(),
         description: proofDescription.value.trim(),
         cadence: "daily",
@@ -384,43 +413,19 @@ function goNextStep() {
         sortOrder: 1,
       },
     ],
-    reminderRules: [
-      createReminderRule({
-        source: existingDayReminder,
-        kind: "day",
-        time: dayReminderTime.value,
-        label: "白天对齐提醒",
-        message: "暂停 30 秒，确认你现在做的事是否像你定义的那个人。",
-      }),
-      createReminderRule({
-        source: existingNightReminder,
-        kind: "night",
-        time: nightReminderTime.value,
-        label: "夜间复盘提醒",
-        message: "把今天重新整合成明天的燃料，完成你的夜间复盘。",
-      }),
-    ],
+    reminderRules: buildAllReminders(),
   });
 
-  uni.showToast({
-    title: "系统已启动",
-    icon: "success",
-  });
+  uni.showToast({ title: "系统已启动", icon: "success" });
+  setTimeout(() => switchToTab(TODAY_PAGE_PATH), 200);
+}
 
-  setTimeout(() => {
-    switchToTab(TODAY_PAGE_PATH);
-  }, 180);
+function goJourney() {
+  uni.navigateTo({ url: "/pages/journey-morning/index" });
 }
 
 onShow(() => {
   store.initialize();
-  if (store.state.data.onboardingCompleted) {
-    switchToTab(TODAY_PAGE_PATH);
-    return;
-  }
-
-  hydrateDrafts();
-  currentStep.value = detectSuggestedStep();
 });
 </script>
 
@@ -435,16 +440,11 @@ onShow(() => {
   flex-direction: column;
 }
 
-.onboarding-page {
-  gap: 24rpx;
-}
-
+.onboarding-page { gap: 22rpx; }
 .onboarding-hero,
 .onboarding-card,
 .field-block,
-.reminder-pair {
-  gap: 18rpx;
-}
+.reminder-pair { gap: 18rpx; }
 
 .onboarding-hero__title {
   color: #f5f5f5;
@@ -452,19 +452,33 @@ onShow(() => {
   line-height: 1.34;
 }
 
+.onboarding-tip {
+  padding: 16rpx 18rpx;
+  border: 1px dashed rgba(82, 82, 91, 0.6);
+  border-radius: 16rpx;
+  color: #a1a1aa;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.onboarding-tip__link {
+  color: #34d399;
+  text-decoration: underline;
+}
+
 .onboarding-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12rpx;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10rpx;
 }
 
 .onboarding-step {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  padding: 18rpx 16rpx;
+  gap: 6rpx;
+  padding: 14rpx 12rpx;
   border: 1px solid rgba(39, 39, 42, 0.72);
-  border-radius: 18rpx;
+  border-radius: 14rpx;
   background: rgba(24, 24, 27, 0.28);
 }
 
@@ -477,7 +491,6 @@ onShow(() => {
   color: #71717a;
   font-size: 18rpx;
 }
-
 .onboarding-step__title {
   color: #d4d4d8;
   font-size: 22rpx;
@@ -498,8 +511,8 @@ onShow(() => {
   gap: 18rpx;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx;
-  border-radius: 24rpx;
+  padding: 22rpx;
+  border-radius: 22rpx;
   background: rgba(10, 10, 11, 0.34);
 }
 

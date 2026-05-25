@@ -1,6 +1,6 @@
 {
   "name": "@guiling/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "归零 RE:ZERO — shared business logic, types, and stores.",
   "type": "module",

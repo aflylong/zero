@@ -8,12 +8,14 @@
         </transition>
       </router-view>
     </main>
+    <InAppBanner />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
 import AppSidebar from "@/components/layout/AppSidebar.vue";
+import InAppBanner from "@/components/common/InAppBanner.vue";
 import { useAppStore } from "@guiling/core";
 import { startReminderScheduler } from "@/services/reminderScheduler";
 

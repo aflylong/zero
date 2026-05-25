@@ -8,13 +8,15 @@
 
       <div class="welcome__body">
         <p class="body-text">
-          这个系统基于一篇文章。它不是鸡汤,是一套可以在一天内执行的心智重置流程。
+          这套系统基于 Dan Koe 的一篇长文。原文给的是一套需要花
+          <strong>整整一天</strong>跑完的心智重置流程,而不是几分钟的表单。
         </p>
         <p class="body-text">
-          建议你先花 20 分钟把原文读完——想清楚你要去哪、不要回到哪——然后再来设置你的方向、身份和目标。
+          推荐路径:先把原文读完(7 章,约 20 分钟),然后留出整整一天,严格按系统的引导回答 22 道题——
+          11 道早晨开掘,9 道白天打断,5 步夜晚综合。
         </p>
         <p class="muted-text">
-          如果你已经读过了,或者已经想清楚了,可以直接开始设置。
+          如果你已经读过、想清楚了,也可以直接跳到方向 / 身份 / 目标的快速设置。
         </p>
       </div>
 
@@ -23,9 +25,12 @@
           <BookOpenText :size="16" :stroke-width="iconStroke" />
           <span>先读原文</span>
         </button>
-        <button type="button" class="btn btn-ghost btn-lg" @click="goSetup">
-          <Rocket :size="16" :stroke-width="iconStroke" />
-          <span>我想清楚了,直接设置</span>
+        <button type="button" class="btn btn-ghost btn-lg" @click="goJourney">
+          <Sun :size="16" :stroke-width="iconStroke" />
+          <span>今天就跑一遍流程</span>
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm welcome__quick" @click="goSetup">
+          我已读已想过,直接快速设置
         </button>
       </div>
     </div>
@@ -33,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { BookOpenText, Rocket } from "lucide-vue-next";
+import { BookOpenText, Sun } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { tokens } from "@guiling/core";
 import logoUrl from "@/assets/logo.png";
@@ -43,6 +48,10 @@ const router = useRouter();
 
 function goReadArticle() {
   router.push("/path/article");
+}
+
+function goJourney() {
+  router.push("/journey/morning");
 }
 
 function goSetup() {
@@ -66,7 +75,7 @@ function goSetup() {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  max-width: 520px;
+  max-width: 560px;
   text-align: center;
 }
 
@@ -116,5 +125,11 @@ function goSetup() {
   gap: 12px;
   width: 100%;
   margin-top: 12px;
+}
+
+.welcome__quick {
+  align-self: center;
+  margin-top: 4px;
+  color: var(--si-color-text-faint);
 }
 </style>

@@ -1,5 +1,6 @@
 import { computed, reactive, readonly } from "vue";
 import { articleSections } from "../content/article";
+import { findDayPrompt } from "../content/dayPrompts";
 import {
   buildDateTime,
   clamp,
@@ -13,13 +14,18 @@ import {
 } from "../services/date";
 import { readAppStorage, writeAppStorage } from "../services/storage";
 import type {
+  ActionLog,
   AppData,
   DailyPlan,
   DailySnapshot,
+  DayPromptResponse,
   GoalRecord,
   GoalStatus,
   IdentityProfile,
-  NightReview,
+  IdentityStage,
+  MorningExcavation,
+  NightSynthesis,
+  NotificationPreferences,
   OnboardingPayload,
   ProofRule,
   RecordDay,
@@ -29,13 +35,19 @@ import type {
   ReminderAction,
   ReminderPrompt,
   ReminderRule,
+  TomorrowBlock,
   VisionProfile,
 } from "../types/app";
 
 const DEFAULT_VISION_PROFILE: VisionProfile = {
   visionText: "",
   antiVisionText: "",
-  whyChangeText: "",
+
+  fiveYearTuesday: "",
+  tenYearTuesday: "",
+  endOfLife: "",
+  threeYearTuesday: "",
+  oneThingThisWeek: "",
 
   yearGoal: "",
   yearGoalDescription: "",
@@ -45,20 +57,43 @@ const DEFAULT_VISION_PROFILE: VisionProfile = {
   monthProjectDeadline: null,
 
   constraints: [],
-
-  mainQuestTitle: "",
-  mainQuestDescription: "",
 };
 
 const DEFAULT_IDENTITY_PROFILE: IdentityProfile = {
   statement: "",
   antiIdentityText: "",
-  beliefs: [],
+  principles: [],
+  stage: "dissonance",
 };
 
-const DEFAULT_PROOF_RULES: ProofRule[] = [];
+const DEFAULT_MORNING_EXCAVATION: MorningExcavation = {
+  startedAt: null,
+  excavationCompletedAt: null,
+  completedAt: null,
+  responses: {},
+  currentQuestionKey: "q1",
+};
 
-const DEFAULT_REMINDER_RULES: ReminderRule[] = [];
+const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
+  desktopNotification: true,
+  sound: true,
+  focusWindow: true,
+  inAppBanner: true,
+};
+
+function createEmptyNightSynthesis(dateKey: string): NightSynthesis {
+  return {
+    dateKey,
+    stuckReason: "",
+    enemyName: "",
+    antiVisionMantra: "",
+    visionMantra: "",
+    yearLens: "",
+    monthLens: "",
+    tomorrowBlocks: [],
+    updatedAt: nowIso(),
+  };
+}
 
 function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -68,21 +103,24 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function cloneProofRules(): ProofRule[] {
-  return DEFAULT_PROOF_RULES.map((rule) => ({ ...rule }));
-}
-
-function cloneReminderRules(): ReminderRule[] {
-  return DEFAULT_REMINDER_RULES.map((rule) => ({ ...rule }));
+function buildHeadline(data: AppData): string {
+  const stage = data.identityProfile.stage;
+  if (!data.journeyCompleted && !data.morningExcavation.startedAt) {
+    return "今天就开始那 22 题,把当前生活看清楚。";
+  }
+  if (stage === "dissonance") return "失调阶段:对当前生活厌倦本身就是动力。";
+  if (stage === "uncertainty") return "不确定阶段:实验比正确更重要。";
+  if (stage === "discovery") return "发现阶段:做那个你已经看清楚的小动作。";
+  return "你现在做的事,像不像你定义的那个人?";
 }
 
 function createDailyPlan(dateKey: string, data: AppData): DailyPlan {
   return {
     dateKey,
     focusTheme: data.identityProfile.statement,
-    mainQuestTitle: data.visionProfile.yearGoal || data.visionProfile.mainQuestTitle,
-    mainQuestDescription: data.visionProfile.yearGoalDescription || data.visionProfile.mainQuestDescription,
-    reminderHeadline: "你现在做的事,像不像你定义的那个人?",
+    yearGoalTitle: data.visionProfile.yearGoal,
+    yearGoalDescription: data.visionProfile.yearGoalDescription,
+    reminderHeadline: buildHeadline(data),
   };
 }
 
@@ -93,6 +131,7 @@ function createDailySnapshot(dateKey: string): DailySnapshot {
     todayNote: "",
     alignmentScore: 0,
     reminderActions: [],
+    dayPromptResponses: [],
     lastUpdatedAt: nowIso(),
   };
 }
@@ -102,67 +141,168 @@ function createDefaultAppData(): AppData {
 
   return {
     onboardingCompleted: false,
+    journeyCompleted: false,
     articleProgress: {
       currentSectionId: firstSectionId,
       completedSectionIds: [],
       lastOpenedAt: null,
+      notes: {},
     },
+    morningExcavation: { ...DEFAULT_MORNING_EXCAVATION, responses: {} },
+    nightSynthesisByDate: {},
     visionProfile: { ...DEFAULT_VISION_PROFILE },
     identityProfile: {
       ...DEFAULT_IDENTITY_PROFILE,
-      beliefs: [...DEFAULT_IDENTITY_PROFILE.beliefs],
+      principles: [...DEFAULT_IDENTITY_PROFILE.principles],
     },
-    proofRules: cloneProofRules(),
-    reminderRules: cloneReminderRules(),
+    proofRules: [],
+    reminderRules: [],
     dailyPlans: {},
     dailySnapshots: {},
-    nightReviews: {},
     actionLogs: [],
     goalHistory: [],
+    notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFS },
   };
 }
 
-function mergeWithDefaults(input?: Partial<AppData> | null): AppData {
+/**
+ * 旧版本数据迁移 + 字段兜底。
+ * 要点:
+ *   - identityProfile.beliefs[]    -> identityProfile.principles[]
+ *   - visionProfile.mainQuestTitle -> visionProfile.yearGoal
+ *   - visionProfile.whyChangeText  -> 抛弃(融到 antiVisionText 引导问)
+ *   - 旧 nightReviews              -> 抛弃(新结构 nightSynthesisByDate)
+ *   - 旧 reminderRule.deliveryMode = "wechat-subscribe"  -> "system-notification"
+ */
+type LegacyVisionPatch = Partial<VisionProfile> & {
+  mainQuestTitle?: string;
+  mainQuestDescription?: string;
+  whyChangeText?: string;
+};
+
+type LegacyIdentityPatch = Partial<IdentityProfile> & {
+  beliefs?: string[];
+};
+
+type LegacyAppDataPatch = Partial<AppData> & {
+  visionProfile?: LegacyVisionPatch;
+  identityProfile?: LegacyIdentityPatch;
+  nightReviews?: Record<string, unknown>;
+};
+
+function mergeWithDefaults(input?: LegacyAppDataPatch | null): AppData {
   const base = createDefaultAppData();
-  if (!input) {
-    return base;
+  if (!input) return base;
+
+  // identity
+  const inIdentity = input.identityProfile;
+  const principles =
+    inIdentity?.principles && inIdentity.principles.length
+      ? inIdentity.principles
+      : inIdentity?.beliefs && inIdentity.beliefs.length
+        ? [...inIdentity.beliefs]
+        : base.identityProfile.principles;
+
+  // vision
+  const inVision = input.visionProfile;
+  const yearGoal = inVision?.yearGoal ?? inVision?.mainQuestTitle ?? base.visionProfile.yearGoal;
+  const yearGoalDescription =
+    inVision?.yearGoalDescription ??
+    inVision?.mainQuestDescription ??
+    base.visionProfile.yearGoalDescription;
+
+  const mergedVision: VisionProfile = {
+    ...base.visionProfile,
+    ...inVision,
+    yearGoal,
+    yearGoalDescription,
+    constraints: inVision?.constraints?.length
+      ? inVision.constraints
+      : base.visionProfile.constraints,
+  };
+  // 移除 legacy 字段(避免 spread 进来后还残留在内存里)
+  const visionAny = mergedVision as unknown as Record<string, unknown>;
+  delete visionAny.mainQuestTitle;
+  delete visionAny.mainQuestDescription;
+  delete visionAny.whyChangeText;
+
+  // reminder rules — 把旧的 wechat-subscribe 改写成 system-notification
+  const reminderRules = (input.reminderRules?.length
+    ? input.reminderRules
+    : base.reminderRules
+  ).map((r) => ({
+    ...r,
+    deliveryMode:
+      (r.deliveryMode as string) === "wechat-subscribe"
+        ? "system-notification"
+        : r.deliveryMode,
+  })) as ReminderRule[];
+
+  // daily plans — 旧版有 mainQuestTitle 字段,运行时映射
+  const dailyPlans: Record<string, DailyPlan> = {};
+  for (const [k, v] of Object.entries(input.dailyPlans ?? {})) {
+    const old = v as unknown as Record<string, unknown>;
+    dailyPlans[k] = {
+      dateKey: (old.dateKey as string) ?? k,
+      focusTheme: (old.focusTheme as string) ?? "",
+      yearGoalTitle:
+        (old.yearGoalTitle as string) ??
+        (old.mainQuestTitle as string) ??
+        yearGoal,
+      yearGoalDescription:
+        (old.yearGoalDescription as string) ??
+        (old.mainQuestDescription as string) ??
+        yearGoalDescription,
+      reminderHeadline: (old.reminderHeadline as string) ?? buildHeadline({
+        ...base,
+        visionProfile: mergedVision,
+        identityProfile: { ...base.identityProfile, principles, stage: inIdentity?.stage ?? base.identityProfile.stage },
+        morningExcavation: {
+          ...base.morningExcavation,
+          ...input.morningExcavation,
+        },
+        journeyCompleted: input.journeyCompleted ?? false,
+      } as AppData),
+    };
   }
 
   return {
     ...base,
-    ...input,
+    onboardingCompleted: input.onboardingCompleted ?? base.onboardingCompleted,
+    journeyCompleted: input.journeyCompleted ?? base.journeyCompleted,
     articleProgress: {
       ...base.articleProgress,
       ...input.articleProgress,
       completedSectionIds:
-        input.articleProgress?.completedSectionIds ?? base.articleProgress.completedSectionIds,
+        input.articleProgress?.completedSectionIds ??
+        base.articleProgress.completedSectionIds,
+      notes: input.articleProgress?.notes ?? base.articleProgress.notes,
     },
-    visionProfile: {
-      ...base.visionProfile,
-      ...input.visionProfile,
-      constraints: input.visionProfile?.constraints?.length
-        ? input.visionProfile.constraints
-        : base.visionProfile.constraints,
-      // 向后兼容:如果旧数据没有 yearGoal 但有 mainQuestTitle,映射过来
-      yearGoal: input.visionProfile?.yearGoal || input.visionProfile?.mainQuestTitle || base.visionProfile.yearGoal,
-      yearGoalDescription: input.visionProfile?.yearGoalDescription || input.visionProfile?.mainQuestDescription || base.visionProfile.yearGoalDescription,
-      mainQuestTitle: input.visionProfile?.yearGoal || input.visionProfile?.mainQuestTitle || base.visionProfile.mainQuestTitle,
-      mainQuestDescription: input.visionProfile?.yearGoalDescription || input.visionProfile?.mainQuestDescription || base.visionProfile.mainQuestDescription,
+    morningExcavation: {
+      ...base.morningExcavation,
+      ...input.morningExcavation,
+      responses:
+        input.morningExcavation?.responses ?? base.morningExcavation.responses,
     },
+    nightSynthesisByDate:
+      input.nightSynthesisByDate ?? base.nightSynthesisByDate,
+    visionProfile: mergedVision,
     identityProfile: {
       ...base.identityProfile,
-      ...input.identityProfile,
-      beliefs: input.identityProfile?.beliefs?.length
-        ? input.identityProfile.beliefs
-        : base.identityProfile.beliefs,
+      ...inIdentity,
+      principles,
+      stage: inIdentity?.stage ?? base.identityProfile.stage,
     },
     proofRules: input.proofRules?.length ? input.proofRules : base.proofRules,
-    reminderRules: input.reminderRules?.length ? input.reminderRules : base.reminderRules,
-    dailyPlans: input.dailyPlans ?? base.dailyPlans,
+    reminderRules,
+    dailyPlans,
     dailySnapshots: input.dailySnapshots ?? base.dailySnapshots,
-    nightReviews: input.nightReviews ?? base.nightReviews,
     actionLogs: input.actionLogs ?? base.actionLogs,
     goalHistory: input.goalHistory ?? base.goalHistory,
+    notificationPreferences: {
+      ...base.notificationPreferences,
+      ...input.notificationPreferences,
+    },
   };
 }
 
@@ -183,7 +323,7 @@ function persist(): void {
 }
 
 function appendLog(
-  type: AppData["actionLogs"][number]["type"],
+  type: ActionLog["type"],
   label: string,
   detail?: string,
   refId?: string,
@@ -209,6 +349,8 @@ function ensureDay(dateKey: string = internalState.activeDateKey): {
 
   if (!internalState.data.dailySnapshots[dateKey]) {
     internalState.data.dailySnapshots[dateKey] = createDailySnapshot(dateKey);
+  } else if (!internalState.data.dailySnapshots[dateKey].dayPromptResponses) {
+    internalState.data.dailySnapshots[dateKey].dayPromptResponses = [];
   }
 
   return {
@@ -230,7 +372,7 @@ function getEarliestRecordDateKey(): string {
   const keys = new Set<string>([
     ...Object.keys(internalState.data.dailyPlans),
     ...Object.keys(internalState.data.dailySnapshots),
-    ...Object.keys(internalState.data.nightReviews),
+    ...Object.keys(internalState.data.nightSynthesisByDate ?? {}),
     ...internalState.data.actionLogs.map((log) => log.dateKey),
   ]);
 
@@ -239,7 +381,7 @@ function getEarliestRecordDateKey(): string {
 
 function buildRecordDay(dateKey: string): RecordDay {
   const snapshot = internalState.data.dailySnapshots[dateKey];
-  const review = internalState.data.nightReviews[dateKey];
+  const synthesis = internalState.data.nightSynthesisByDate?.[dateKey];
 
   return {
     dateKey,
@@ -248,7 +390,7 @@ function buildRecordDay(dateKey: string): RecordDay {
     alignmentScore: snapshot?.alignmentScore ?? null,
     completedProofCount: snapshot?.completedProofRuleIds.length ?? 0,
     note: snapshot?.todayNote ?? "",
-    hasNightReview: Boolean(review),
+    hasNightReview: Boolean(synthesis),
   };
 }
 
@@ -262,6 +404,13 @@ function getReminderAction(ruleId: string, dateKey: string = internalState.activ
   );
 }
 
+/**
+ * "今日推进度" — 0/1-39/40-69/70+ 四档,与 HeatmapGrid 着色保持一致。
+ *   50% 来自当日杠杆完成度
+ *   30% 来自被处理过的提醒比(complete 或 skip 都算"看见了")
+ *   10% 来自今日观察是否留下
+ *   10% 来自夜晚综合是否写过
+ */
 function autoAlignment(dateKey: string = internalState.activeDateKey): number {
   const snapshot = ensureDay(dateKey).snapshot;
   const proofs = activeProofRules();
@@ -269,20 +418,29 @@ function autoAlignment(dateKey: string = internalState.activeDateKey): number {
     ? snapshot.completedProofRuleIds.length / proofs.length
     : 1;
   const reminders = internalState.data.reminderRules.filter((rule) => rule.enabled);
-  const reminderDone = reminders.length
-    ? reminders.filter(
-        (rule) => getReminderAction(rule.id, dateKey)?.action === "complete",
-      ).length / reminders.length
+  const seen = reminders.length
+    ? reminders.filter((rule) => {
+        const action = getReminderAction(rule.id, dateKey);
+        return action?.action === "complete" || action?.action === "skip";
+      }).length / reminders.length
     : 1;
   const noteBonus = snapshot.todayNote.trim() ? 0.1 : 0;
-  return clamp(Math.round((proofRatio * 0.7 + reminderDone * 0.2 + noteBonus) * 100), 0, 100);
+  const synthesis = internalState.data.nightSynthesisByDate?.[dateKey];
+  const synthesisBonus =
+    synthesis &&
+    (synthesis.stuckReason || synthesis.enemyName || synthesis.visionMantra)
+      ? 0.1
+      : 0;
+  return clamp(
+    Math.round((proofRatio * 0.5 + seen * 0.3 + noteBonus + synthesisBonus) * 100),
+    0,
+    100,
+  );
 }
 
 function recalculateAlignment(dateKey: string = internalState.activeDateKey): void {
   const snapshot = ensureDay(dateKey).snapshot;
-  const reviewScore = internalState.data.nightReviews[dateKey]?.alignmentScore;
-  const autoScore = autoAlignment(dateKey);
-  snapshot.alignmentScore = reviewScore ? Math.round((reviewScore + autoScore) / 2) : autoScore;
+  snapshot.alignmentScore = autoAlignment(dateKey);
   snapshot.lastUpdatedAt = nowIso();
 }
 
@@ -295,24 +453,27 @@ function refreshReminderPrompts(now: Date = new Date()): void {
     .filter((rule) => rule.enabled)
     .filter((rule) => {
       const action = getReminderAction(rule.id, dateKey);
-      if (action && action.action !== "snooze") {
-        return false;
-      }
-
+      if (action && action.action !== "snooze") return false;
       if (rule.snoozedUntil && new Date(rule.snoozedUntil).getTime() > now.getTime()) {
         return false;
       }
-
+      // commute 类提醒没有时间触发
+      if (rule.kind === "commute") return false;
       const dueTime = buildDateTime(dateKey, rule.hour, rule.minute);
       return now.getTime() >= dueTime.getTime();
     })
-    .map((rule) => ({
-      ruleId: rule.id,
-      kind: rule.kind,
-      label: rule.label,
-      message: rule.message,
-      dueAtLabel: formatTimeLabel(rule.hour, rule.minute),
-    }));
+    .map((rule) => {
+      const dp = rule.promptKey ? findDayPrompt(rule.promptKey) : null;
+      return {
+        ruleId: rule.id,
+        kind: rule.kind,
+        label: rule.label,
+        message: rule.message,
+        question: dp?.question ?? rule.message,
+        promptKey: rule.promptKey ?? "",
+        dueAtLabel: formatTimeLabel(rule.hour, rule.minute),
+      };
+    });
 }
 
 function initialize(): void {
@@ -337,9 +498,7 @@ function initialize(): void {
 
 function resetSnooze(ruleId: string): void {
   const target = internalState.data.reminderRules.find((rule) => rule.id === ruleId);
-  if (target) {
-    target.snoozedUntil = null;
-  }
+  if (target) target.snoozedUntil = null;
 }
 
 function setRecordWindowEndDate(dateKey: string): void {
@@ -350,17 +509,27 @@ function shiftRecordWindow(offsetDays: number): void {
   setRecordWindowEndDate(shiftDateKey(internalState.recordWindowEndDateKey, offsetDays));
 }
 
-function completeOnboarding(payload: OnboardingPayload): void {
-  internalState.data.onboardingCompleted = true;
-  internalState.data.visionProfile = payload.visionProfile;
-  internalState.data.identityProfile = payload.identityProfile;
-  internalState.data.proofRules = sortRules(payload.proofRules);
-  internalState.data.reminderRules = payload.reminderRules;
-  internalState.activeDateKey = formatDateKey();
+function rebuildDailyPlanForToday(): void {
   internalState.data.dailyPlans[internalState.activeDateKey] = createDailyPlan(
     internalState.activeDateKey,
     internalState.data,
   );
+}
+
+function completeOnboarding(payload: OnboardingPayload): void {
+  internalState.data.onboardingCompleted = true;
+  internalState.data.visionProfile = {
+    ...internalState.data.visionProfile,
+    ...payload.visionProfile,
+  };
+  internalState.data.identityProfile = {
+    ...internalState.data.identityProfile,
+    ...payload.identityProfile,
+  };
+  internalState.data.proofRules = sortRules(payload.proofRules);
+  internalState.data.reminderRules = payload.reminderRules;
+  internalState.activeDateKey = formatDateKey();
+  rebuildDailyPlanForToday();
   internalState.data.dailySnapshots[internalState.activeDateKey] = createDailySnapshot(
     internalState.activeDateKey,
   );
@@ -370,22 +539,11 @@ function completeOnboarding(payload: OnboardingPayload): void {
 }
 
 function updateVisionProfile(patch: Partial<VisionProfile>): void {
-  const merged: VisionProfile = {
+  internalState.data.visionProfile = {
     ...internalState.data.visionProfile,
     ...patch,
   };
-  // 保持 mainQuestTitle/Description 与 yearGoal 同步,确保兼容字段不漂移
-  if (patch.yearGoal !== undefined) {
-    merged.mainQuestTitle = patch.yearGoal;
-  }
-  if (patch.yearGoalDescription !== undefined) {
-    merged.mainQuestDescription = patch.yearGoalDescription;
-  }
-  internalState.data.visionProfile = merged;
-  internalState.data.dailyPlans[internalState.activeDateKey] = createDailyPlan(
-    internalState.activeDateKey,
-    internalState.data,
-  );
+  rebuildDailyPlanForToday();
   persist();
 }
 
@@ -421,39 +579,40 @@ function updateIdentityProfile(patch: Partial<IdentityProfile>): void {
   internalState.data.identityProfile = {
     ...internalState.data.identityProfile,
     ...patch,
-    beliefs: patch.beliefs ?? internalState.data.identityProfile.beliefs,
+    principles: patch.principles ?? internalState.data.identityProfile.principles,
   };
-  internalState.data.dailyPlans[internalState.activeDateKey] = createDailyPlan(
-    internalState.activeDateKey,
-    internalState.data,
-  );
+  rebuildDailyPlanForToday();
   persist();
 }
 
-function addBelief(): void {
-  internalState.data.identityProfile.beliefs.push("新的核心信念");
-  appendLog("belief-added", "新增核心信念");
+function setIdentityStage(stage: IdentityStage): void {
+  internalState.data.identityProfile.stage = stage;
+  rebuildDailyPlanForToday();
   persist();
 }
 
-function updateBelief(index: number, value: string): void {
-  internalState.data.identityProfile.beliefs.splice(index, 1, value);
+function addPrinciple(): void {
+  internalState.data.identityProfile.principles.push("新的原则");
+  appendLog("principle-added", "新增原则");
   persist();
 }
 
-function removeBelief(index: number): void {
-  internalState.data.identityProfile.beliefs.splice(index, 1);
-  appendLog("belief-removed", "移除核心信念");
+function updatePrinciple(index: number, value: string): void {
+  internalState.data.identityProfile.principles.splice(index, 1, value);
+  persist();
+}
+
+function removePrinciple(index: number): void {
+  internalState.data.identityProfile.principles.splice(index, 1);
+  appendLog("principle-removed", "移除原则");
   persist();
 }
 
 function upsertProofRule(rule: ProofRule): void {
   const index = internalState.data.proofRules.findIndex((item) => item.id === rule.id);
-  if (index === -1) {
-    internalState.data.proofRules.push(rule);
-  } else {
-    internalState.data.proofRules.splice(index, 1, rule);
-  }
+  const enriched: ProofRule = { ...rule, createdAt: rule.createdAt ?? nowIso() };
+  if (index === -1) internalState.data.proofRules.push(enriched);
+  else internalState.data.proofRules.splice(index, 1, enriched);
   internalState.data.proofRules = sortRules(internalState.data.proofRules);
   recalculateAlignment();
   persist();
@@ -462,14 +621,14 @@ function upsertProofRule(rule: ProofRule): void {
 function createProofRule(): void {
   const nextOrder =
     Math.max(0, ...internalState.data.proofRules.map((rule) => rule.sortOrder)) + 1;
-
   upsertProofRule({
     id: createId("rule"),
-    title: "新的证明法则",
+    title: "新的每日杠杆",
     description: "把一句模糊目标改成可验证的动作。",
     cadence: "daily",
     active: true,
     sortOrder: nextOrder,
+    createdAt: nowIso(),
   });
 }
 
@@ -511,14 +670,39 @@ function updateTodayNote(note: string): void {
 
 function updateReminderRule(ruleId: string, patch: Partial<ReminderRule>): void {
   const index = internalState.data.reminderRules.findIndex((rule) => rule.id === ruleId);
-  if (index === -1) {
-    return;
-  }
-
+  if (index === -1) return;
   internalState.data.reminderRules.splice(index, 1, {
     ...internalState.data.reminderRules[index],
     ...patch,
   });
+  refreshReminderPrompts();
+  persist();
+}
+
+function createReminderRule(seed: Partial<ReminderRule>): ReminderRule {
+  const rule: ReminderRule = {
+    id: seed.id ?? createId("reminder"),
+    kind: seed.kind ?? "day",
+    promptKey: seed.promptKey,
+    label: seed.label ?? "新的提醒",
+    hour: seed.hour ?? 11,
+    minute: seed.minute ?? 0,
+    enabled: seed.enabled ?? true,
+    deliveryMode: seed.deliveryMode ?? "system-notification",
+    subscriptionStatus: seed.subscriptionStatus ?? "accepted",
+    message: seed.message ?? "",
+    snoozedUntil: null,
+  };
+  internalState.data.reminderRules = [...internalState.data.reminderRules, rule];
+  refreshReminderPrompts();
+  persist();
+  return rule;
+}
+
+function removeReminderRule(ruleId: string): void {
+  internalState.data.reminderRules = internalState.data.reminderRules.filter(
+    (r) => r.id !== ruleId,
+  );
   refreshReminderPrompts();
   persist();
 }
@@ -535,11 +719,8 @@ function resolveReminder(ruleId: string, action: ReminderAction): void {
   const existingIndex = snapshot.reminderActions.findIndex(
     (item) => item.reminderId === ruleId,
   );
-  if (existingIndex >= 0) {
-    snapshot.reminderActions.splice(existingIndex, 1, actionRecord);
-  } else {
-    snapshot.reminderActions.push(actionRecord);
-  }
+  if (existingIndex >= 0) snapshot.reminderActions.splice(existingIndex, 1, actionRecord);
+  else snapshot.reminderActions.push(actionRecord);
 
   const targetRule = internalState.data.reminderRules.find((rule) => rule.id === ruleId);
   if (targetRule) {
@@ -558,14 +739,197 @@ function resolveReminder(ruleId: string, action: ReminderAction): void {
   persist();
 }
 
-function saveNightReview(review: Omit<NightReview, "updatedAt">): void {
-  internalState.data.nightReviews[review.dateKey] = {
-    ...review,
+function answerDayPrompt(promptKey: string, answer: string): void {
+  const dateKey = internalState.activeDateKey;
+  const snapshot = ensureDay(dateKey).snapshot;
+  const now = nowIso();
+  const next: DayPromptResponse = {
+    promptKey,
+    answer: answer.trim(),
+    answeredAt: now,
+  };
+  const idx = snapshot.dayPromptResponses.findIndex((r) => r.promptKey === promptKey);
+  if (idx >= 0) snapshot.dayPromptResponses.splice(idx, 1, next);
+  else snapshot.dayPromptResponses.push(next);
+  snapshot.lastUpdatedAt = now;
+  appendLog("day-prompt-answered", `回答 ${promptKey}`, answer.slice(0, 60), promptKey);
+  recalculateAlignment(dateKey);
+  persist();
+}
+
+// —— Morning Excavation ——
+function ensureExcavationStarted(): void {
+  if (!internalState.data.morningExcavation.startedAt) {
+    internalState.data.morningExcavation.startedAt = nowIso();
+    persist();
+  }
+}
+
+function updateExcavationResponse(key: string, value: string): void {
+  ensureExcavationStarted();
+  const ex = internalState.data.morningExcavation;
+  ex.responses = { ...ex.responses, [key]: value };
+  ex.currentQuestionKey = key;
+
+  switch (key) {
+    case "q5":
+      updateVisionProfile({ fiveYearTuesday: value });
+      break;
+    case "q6":
+      updateVisionProfile({ tenYearTuesday: value });
+      break;
+    case "q7":
+      updateVisionProfile({ endOfLife: value });
+      break;
+    case "q9":
+      updateIdentityProfile({ antiIdentityText: value });
+      break;
+    case "q12":
+      updateVisionProfile({ threeYearTuesday: value });
+      break;
+    case "q13":
+      updateIdentityProfile({ statement: value });
+      break;
+    case "q14":
+      updateVisionProfile({ oneThingThisWeek: value });
+      break;
+    default:
+      break;
+  }
+
+  if (key === "q5" || key === "q6" || key === "q7") {
+    const v = internalState.data.visionProfile;
+    if (!v.antiVisionText.trim()) {
+      const pieces = [v.fiveYearTuesday, v.tenYearTuesday, v.endOfLife]
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (pieces.length >= 2) {
+        updateVisionProfile({ antiVisionText: pieces.join("\n\n") });
+      }
+    }
+  }
+  if (key === "q12" || key === "q14") {
+    const v = internalState.data.visionProfile;
+    if (!v.visionText.trim() && v.threeYearTuesday.trim()) {
+      updateVisionProfile({ visionText: v.threeYearTuesday });
+    }
+  }
+
+  const has = (k: string) => Boolean(ex.responses[k]?.trim());
+  const excavationKeys = ["q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11"];
+  if (!ex.excavationCompletedAt && excavationKeys.every(has)) {
+    ex.excavationCompletedAt = nowIso();
+    appendLog("excavation-saved", "完成早晨开掘 11 题");
+  }
+  const allKeys = [...excavationKeys, "q12", "q13", "q14", "q15"];
+  if (!ex.completedAt && allKeys.every(has)) {
+    ex.completedAt = nowIso();
+    internalState.data.journeyCompleted = true;
+    if (internalState.data.identityProfile.stage === "dissonance") {
+      internalState.data.identityProfile.stage = "uncertainty";
+    }
+    appendLog("excavation-saved", "完成早晨流程 15 题");
+  }
+  rebuildDailyPlanForToday();
+  persist();
+}
+
+function setExcavationCurrent(key: string): void {
+  internalState.data.morningExcavation.currentQuestionKey = key;
+  persist();
+}
+
+// —— Night Synthesis ——
+function getNightSynthesis(dateKey: string = internalState.activeDateKey): NightSynthesis {
+  const map = internalState.data.nightSynthesisByDate ?? {};
+  return map[dateKey] ?? createEmptyNightSynthesis(dateKey);
+}
+
+function saveNightSynthesis(synthesis: NightSynthesis): void {
+  if (!internalState.data.nightSynthesisByDate) {
+    internalState.data.nightSynthesisByDate = {};
+  }
+  internalState.data.nightSynthesisByDate[synthesis.dateKey] = {
+    ...synthesis,
     updatedAt: nowIso(),
   };
-  appendLog("review-saved", "保存夜间复盘");
-  recalculateAlignment(review.dateKey);
+
+  // N3/N4 回写,保持"洞见固化"
+  if (synthesis.antiVisionMantra.trim()) {
+    const cur = internalState.data.visionProfile.antiVisionText;
+    const mantra = `「${synthesis.antiVisionMantra.trim()}」`;
+    if (!cur.startsWith(mantra)) {
+      updateVisionProfile({
+        antiVisionText: cur ? `${mantra}\n\n${cur}` : mantra,
+      });
+    }
+  }
+  if (synthesis.visionMantra.trim()) {
+    const cur = internalState.data.visionProfile.visionText;
+    const mantra = `「${synthesis.visionMantra.trim()}」`;
+    if (!cur.startsWith(mantra)) {
+      updateVisionProfile({
+        visionText: cur ? `${mantra}\n\n${cur}` : mantra,
+      });
+    }
+  }
+  if (synthesis.yearLens.trim() && !internalState.data.visionProfile.yearGoal.trim()) {
+    updateVisionProfile({ yearGoal: synthesis.yearLens });
+  }
+  if (synthesis.monthLens.trim() && !internalState.data.visionProfile.monthProject.trim()) {
+    updateVisionProfile({ monthProject: synthesis.monthLens });
+  }
+
+  if (
+    synthesis.stuckReason.trim() &&
+    synthesis.enemyName.trim() &&
+    synthesis.visionMantra.trim() &&
+    synthesis.yearLens.trim() &&
+    internalState.data.identityProfile.stage !== "discovery"
+  ) {
+    internalState.data.identityProfile.stage = "discovery";
+    rebuildDailyPlanForToday();
+  }
+
+  appendLog("synthesis-saved", "保存夜间综合");
+  recalculateAlignment(synthesis.dateKey);
   persist();
+}
+
+function promoteTomorrowBlocks(dateKey: string = internalState.activeDateKey): number {
+  const synthesis = internalState.data.nightSynthesisByDate?.[dateKey];
+  if (!synthesis) return 0;
+  let promoted = 0;
+  let order = Math.max(0, ...internalState.data.proofRules.map((r) => r.sortOrder));
+  const updatedBlocks: TomorrowBlock[] = synthesis.tomorrowBlocks.map((block) => {
+    if (block.promotedToProofRule || !block.title.trim()) return block;
+    order += 1;
+    upsertProofRule({
+      id: createId("rule"),
+      title: block.title.trim(),
+      description: block.timeHint.trim() ? `时间块:${block.timeHint.trim()}` : "",
+      cadence: "daily",
+      active: true,
+      sortOrder: order,
+      fromTomorrowBlockId: block.id,
+      createdAt: nowIso(),
+    });
+    promoted += 1;
+    return { ...block, promotedToProofRule: true };
+  });
+  if (promoted > 0) {
+    internalState.data.nightSynthesisByDate[dateKey] = {
+      ...synthesis,
+      tomorrowBlocks: updatedBlocks,
+      updatedAt: nowIso(),
+    };
+    appendLog(
+      "tomorrow-block-promoted",
+      `升格 ${promoted} 个明日时间块为每日杠杆`,
+    );
+    persist();
+  }
+  return promoted;
 }
 
 function markArticleSectionRead(sectionId: string): void {
@@ -583,10 +947,15 @@ function openArticleSection(sectionId: string): void {
   persist();
 }
 
-function getRecordWindow(options?: {
-  endDateKey?: string;
-  spanDays?: number;
-}): RecordWindow {
+function updateArticleNote(sectionId: string, note: string): void {
+  if (!internalState.data.articleProgress.notes) {
+    internalState.data.articleProgress.notes = {};
+  }
+  internalState.data.articleProgress.notes[sectionId] = note;
+  persist();
+}
+
+function getRecordWindow(options?: { endDateKey?: string; spanDays?: number }): RecordWindow {
   const spanDays = options?.spanDays ?? 35;
   const endDateKey = clampRecordWindowEndDate(
     options?.endDateKey ?? internalState.recordWindowEndDateKey,
@@ -614,12 +983,17 @@ function getRecordSummary(options?: {
   spanDays?: number;
 }): RecordSummary {
   const days = getRecordDays(options);
+  const hasEvidence = (d: RecordDay) =>
+    (d.alignmentScore ?? 0) > 0 ||
+    Boolean(d.note?.trim()) ||
+    d.completedProofCount > 0 ||
+    d.hasNightReview;
   const scoredDays = days.filter((day) => day.alignmentScore !== null);
 
   let currentStreak = 0;
   const reversed = [...days].reverse();
   for (const day of reversed) {
-    if ((day.alignmentScore ?? 0) >= 60) {
+    if (hasEvidence(day)) {
       currentStreak += 1;
       continue;
     }
@@ -629,7 +1003,7 @@ function getRecordSummary(options?: {
   let bestStreak = 0;
   let streak = 0;
   for (const day of days) {
-    if ((day.alignmentScore ?? 0) >= 60) {
+    if (hasEvidence(day)) {
       streak += 1;
       bestStreak = Math.max(bestStreak, streak);
     } else {
@@ -646,7 +1020,7 @@ function getRecordSummary(options?: {
             scoredDays.length,
         )
       : 0,
-    completedDays: scoredDays.filter((day) => (day.alignmentScore ?? 0) >= 60).length,
+    completedDays: days.filter(hasEvidence).length,
     trackedDays: scoredDays.length,
   };
 }
@@ -663,11 +1037,14 @@ function getNextRecordDate(dateKey: string): string | null {
 
 function getRecordDetail(dateKey: string): RecordDetail {
   const snapshot = internalState.data.dailySnapshots[dateKey] ?? null;
-  const review = internalState.data.nightReviews[dateKey] ?? null;
+  const synthesis = internalState.data.nightSynthesisByDate?.[dateKey] ?? null;
   const plan = internalState.data.dailyPlans[dateKey] ?? null;
   const completedIds = snapshot?.completedProofRuleIds ?? [];
   const reminderActions = [...(snapshot?.reminderActions ?? [])].sort((left, right) =>
     left.actedAt > right.actedAt ? -1 : 1,
+  );
+  const dayPromptResponses = [...(snapshot?.dayPromptResponses ?? [])].sort((l, r) =>
+    l.answeredAt > r.answeredAt ? -1 : 1,
   );
   const actionLogs = internalState.data.actionLogs
     .filter((log) => log.dateKey === dateKey)
@@ -681,24 +1058,22 @@ function getRecordDetail(dateKey: string): RecordDetail {
     completedProofCount: completedIds.length,
     totalProofCount: activeProofRules().length,
     todayNote: snapshot?.todayNote ?? "",
-    hasNightReview: Boolean(review),
+    hasNightReview: Boolean(synthesis),
     reminderActions,
+    dayPromptResponses,
     completedProofRuleTitles: completedIds
       .map(
         (ruleId) =>
           internalState.data.proofRules.find((rule) => rule.id === ruleId)?.title ?? "",
       )
       .filter(Boolean),
-    mainQuestTitle: plan?.mainQuestTitle ?? internalState.data.visionProfile.mainQuestTitle,
-    mainQuestDescription:
-      plan?.mainQuestDescription ?? internalState.data.visionProfile.mainQuestDescription,
+    yearGoalTitle: plan?.yearGoalTitle ?? internalState.data.visionProfile.yearGoal,
+    yearGoalDescription:
+      plan?.yearGoalDescription ?? internalState.data.visionProfile.yearGoalDescription,
     focusTheme: plan?.focusTheme ?? internalState.data.identityProfile.statement,
-    winsText: review?.winsText ?? "",
-    missesText: review?.missesText ?? "",
-    reflectionText: review?.reflectionText ?? "",
-    tomorrowFixesText: review?.tomorrowFixesText ?? "",
+    synthesis,
     actionLogs,
-    lastUpdatedAt: review?.updatedAt ?? snapshot?.lastUpdatedAt ?? null,
+    lastUpdatedAt: synthesis?.updatedAt ?? snapshot?.lastUpdatedAt ?? null,
     prevDateKey: getPrevRecordDate(dateKey),
     nextDateKey: getNextRecordDate(dateKey),
   };
@@ -711,7 +1086,8 @@ function endGoal(
 ): void {
   const profile = internalState.data.visionProfile;
   const title = type === "year" ? profile.yearGoal : profile.monthProject;
-  const description = type === "year" ? profile.yearGoalDescription : profile.monthProjectDescription;
+  const description =
+    type === "year" ? profile.yearGoalDescription : profile.monthProjectDescription;
 
   if (!title.trim()) return;
 
@@ -720,9 +1096,10 @@ function endGoal(
     type,
     title,
     description,
-    createdAt: internalState.data.goalHistory.find(
-      (g) => g.type === type && g.status === "active",
-    )?.createdAt ?? nowIso(),
+    createdAt:
+      internalState.data.goalHistory.find(
+        (g) => g.type === type && g.status === "active",
+      )?.createdAt ?? nowIso(),
     endedAt: nowIso(),
     status,
     reflection,
@@ -730,14 +1107,11 @@ function endGoal(
 
   internalState.data.goalHistory.unshift(record);
 
-  // 清空当前目标字段
   if (type === "year") {
     internalState.data.visionProfile = {
       ...internalState.data.visionProfile,
       yearGoal: "",
       yearGoalDescription: "",
-      mainQuestTitle: "",
-      mainQuestDescription: "",
     };
   } else {
     internalState.data.visionProfile = {
@@ -747,9 +1121,10 @@ function endGoal(
       monthProjectDeadline: null,
     };
   }
+  rebuildDailyPlanForToday();
 
   appendLog(
-    `goal-${status}` as AppData["actionLogs"][number]["type"],
+    `goal-${status}` as ActionLog["type"],
     `${type === "year" ? "一年目标" : "一月项目"}:${title}`,
     reflection,
     record.id,
@@ -762,11 +1137,20 @@ function getGoalHistory(type?: "year" | "month"): GoalRecord[] {
   return internalState.data.goalHistory.filter((g) => g.type === type);
 }
 
+// —— Notification preferences ——
+function updateNotificationPreferences(patch: Partial<NotificationPreferences>): void {
+  internalState.data.notificationPreferences = {
+    ...internalState.data.notificationPreferences,
+    ...patch,
+  };
+  persist();
+}
+
 function exportData(): AppData {
   return JSON.parse(JSON.stringify(internalState.data)) as AppData;
 }
 
-function importData(next: Partial<AppData>): void {
+function importData(next: LegacyAppDataPatch): void {
   internalState.data = mergeWithDefaults(next);
   internalState.activeDateKey = formatDateKey();
   internalState.recordWindowEndDateKey = internalState.activeDateKey;
@@ -810,24 +1194,34 @@ export function useAppStore() {
     updateConstraint,
     removeConstraint,
     updateIdentityProfile,
-    addBelief,
-    updateBelief,
-    removeBelief,
+    setIdentityStage,
+    addPrinciple,
+    updatePrinciple,
+    removePrinciple,
     upsertProofRule,
     createProofRule,
     removeProofRule,
     toggleProofCompletion,
     updateTodayNote,
     updateReminderRule,
+    createReminderRule,
+    removeReminderRule,
     resolveReminder,
-    saveNightReview,
+    answerDayPrompt,
+    saveNightSynthesis,
+    getNightSynthesis,
+    promoteTomorrowBlocks,
+    updateExcavationResponse,
+    setExcavationCurrent,
     markArticleSectionRead,
     openArticleSection,
+    updateArticleNote,
     resetSnooze,
     exportData,
     importData,
     endGoal,
     getGoalHistory,
+    updateNotificationPreferences,
   };
 }
 

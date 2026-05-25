@@ -3,9 +3,18 @@
     <PageHeader
       title="道路"
       kicker="PATH"
-      description="愿景把你拉向前,反愿景在你松懈时把你拽回来。这里是你这一年要走的路。"
+      description="愿景把你拉向前,反愿景在你松懈时把你拽回来。"
     >
       <template #actions>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          :class="{ 'btn-success': showRings }"
+          @click="showRings = !showRings"
+        >
+          <Layers :size="14" :stroke-width="iconStroke" />
+          <span>{{ showRings ? "隐藏同心圆" : "看同心圆" }}</span>
+        </button>
         <button type="button" class="btn btn-ghost btn-sm" @click="openArticle">
           <BookOpenText :size="14" :stroke-width="iconStroke" />
           <span>读原文</span>
@@ -23,17 +32,40 @@
           <GlassCard variant="hero">
             <SectionLabel :icon="Compass">愿景</SectionLabel>
             <p class="path-hero__body">{{ visionText }}</p>
+            <p v-if="threeYearTuesday" class="muted-text">
+              三年后周二:{{ threeYearTuesday }}
+            </p>
+            <p v-if="oneThingThisWeek" class="faint-text">
+              这周一件事:{{ oneThingThisWeek }}
+            </p>
           </GlassCard>
 
           <div class="path-row">
             <GlassCard>
               <SectionLabel :icon="AlertTriangle">反愿景</SectionLabel>
               <p class="path-body">{{ antiVisionText }}</p>
+              <details v-if="hasAntiNarrative" class="path-details">
+                <summary>展开三段叙事(5 / 10 / 尽头)</summary>
+                <div class="path-narrative">
+                  <p v-if="fiveYearTuesday">
+                    <strong>5 年:</strong>{{ fiveYearTuesday }}
+                  </p>
+                  <p v-if="tenYearTuesday">
+                    <strong>10 年:</strong>{{ tenYearTuesday }}
+                  </p>
+                  <p v-if="endOfLife">
+                    <strong>尽头:</strong>{{ endOfLife }}
+                  </p>
+                </div>
+              </details>
             </GlassCard>
 
             <GlassCard>
-              <SectionLabel :icon="Flame">非改不可的理由</SectionLabel>
-              <p class="path-body">{{ whyChangeText }}</p>
+              <SectionLabel :icon="Crosshair">最近一次「命名敌人」</SectionLabel>
+              <p class="path-body">{{ enemyNameDisplay }}</p>
+              <p class="faint-text">
+                来自最近一次夜间综合(N2)。每天复盘时它会自动更新。
+              </p>
             </GlassCard>
           </div>
 
@@ -56,8 +88,20 @@
             </div>
             <p class="path-section__title">{{ monthProject }}</p>
             <p class="body-text">{{ monthProjectDescription }}</p>
+            <div v-if="bossXp.total > 0" class="path-boss-xp">
+              <span class="path-boss-xp__label">XP</span>
+              <div class="progress-track">
+                <div
+                  class="progress-bar"
+                  :style="{ width: `${bossXp.percent}%` }"
+                />
+              </div>
+              <span class="path-boss-xp__value">
+                {{ bossXp.done }} / {{ bossXp.total }} 战利品
+              </span>
+            </div>
             <p class="faint-text">
-              一月项目是你这个月要攻克的具体里程碑。它必须服务于一年目标。
+              一月项目是这个月要攻克的具体里程碑,服务于一年目标。
             </p>
           </GlassCard>
 
@@ -86,6 +130,14 @@
         </section>
 
         <aside class="path-col path-col--side">
+          <GlassCard v-if="showRings">
+            <SectionLabel :icon="Layers">六组件同心圆</SectionLabel>
+            <ConcentricRings />
+            <p class="faint-text">
+              原文 ch7-20:这些组件像一组同心圆 / 力场,把你的心智从分心里守护住。
+            </p>
+          </GlassCard>
+
           <button type="button" class="path-article" @click="openArticle">
             <div class="path-article__copy">
               <SectionLabel :icon="BookOpenText">方法原文</SectionLabel>
@@ -105,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
   AlertTriangle,
@@ -113,7 +165,8 @@ import {
   CalendarDays,
   ChevronRight,
   Compass,
-  Flame,
+  Crosshair,
+  Layers,
   Pencil,
   Shield,
   ShieldCheck,
@@ -127,10 +180,13 @@ import GlassCard from "@/components/common/GlassCard.vue";
 import SectionLabel from "@/components/common/SectionLabel.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
 import QuoteTicker from "@/components/common/QuoteTicker.vue";
+import ConcentricRings from "@/components/common/ConcentricRings.vue";
 
 const iconStroke = tokens.iconStrokeWidth;
 const router = useRouter();
 const store = useAppStore();
+
+const showRings = ref(false);
 
 const visionText = computed(
   () =>
@@ -142,21 +198,36 @@ const antiVisionText = computed(
     store.state.data.visionProfile.antiVisionText.trim() ||
     "把你不愿回去的生活说清楚。它会在你松懈时把你拽回来。",
 );
-const whyChangeText = computed(
-  () =>
-    store.state.data.visionProfile.whyChangeText.trim() ||
-    "写下你必须改变的真实理由,不是情绪化的口号。",
+const fiveYearTuesday = computed(
+  () => store.state.data.visionProfile.fiveYearTuesday.trim(),
 );
+const tenYearTuesday = computed(
+  () => store.state.data.visionProfile.tenYearTuesday.trim(),
+);
+const endOfLife = computed(
+  () => store.state.data.visionProfile.endOfLife.trim(),
+);
+const threeYearTuesday = computed(
+  () => store.state.data.visionProfile.threeYearTuesday.trim(),
+);
+const oneThingThisWeek = computed(
+  () => store.state.data.visionProfile.oneThingThisWeek.trim(),
+);
+const hasAntiNarrative = computed(
+  () =>
+    Boolean(
+      fiveYearTuesday.value || tenYearTuesday.value || endOfLife.value,
+    ),
+);
+
 const yearGoal = computed(
   () =>
     store.state.data.visionProfile.yearGoal.trim() ||
-    store.state.data.visionProfile.mainQuestTitle.trim() ||
     "先定下这一年要走到哪。",
 );
 const yearGoalDescription = computed(
   () =>
     store.state.data.visionProfile.yearGoalDescription.trim() ||
-    store.state.data.visionProfile.mainQuestDescription.trim() ||
     "一年后你必须看到什么变化,才算真的打破了旧模式?",
 );
 const monthProject = computed(
@@ -182,6 +253,31 @@ const monthDeadline = computed(() => {
 const constraints = computed(() =>
   store.state.data.visionProfile.constraints.filter((c) => c.trim()),
 );
+
+// 一月 Boss 战 XP 进度:用过去 30 天达到 60% 杠杆完成的天数作为代理
+const bossXp = computed(() => {
+  const days = store.getRecordDays({
+    endDateKey: store.state.activeDateKey,
+    spanDays: 30,
+  });
+  const total = 30;
+  const done = days.filter(
+    (d) => (d.alignmentScore ?? 0) > 0 && d.completedProofCount > 0,
+  ).length;
+  const percent = Math.min(100, Math.round((done / total) * 100));
+  return { total, done, percent };
+});
+
+// 最近一次"命名敌人"
+const enemyNameDisplay = computed(() => {
+  const map = store.state.data.nightSynthesisByDate ?? {};
+  const keys = Object.keys(map).sort();
+  for (let i = keys.length - 1; i >= 0; i -= 1) {
+    const ns = map[keys[i]];
+    if (ns?.enemyName?.trim()) return ns.enemyName.trim();
+  }
+  return "还没命名过。今晚的「夜间综合 N2」就把它写下来。";
+});
 
 const articleProgress = computed(() => ({
   completed: store.state.data.articleProgress.completedSectionIds.length,
@@ -245,6 +341,7 @@ function openArticle() {
   line-height: 1.45;
   color: var(--si-color-text-main);
   letter-spacing: -0.01em;
+  white-space: pre-line;
 }
 
 .path-body {
@@ -252,6 +349,7 @@ function openArticle() {
   color: var(--si-color-text-soft);
   font-size: var(--si-font-md);
   line-height: 1.72;
+  white-space: pre-line;
 }
 
 .path-quest__title {
@@ -267,6 +365,48 @@ function openArticle() {
   font-size: var(--si-font-lg);
   color: var(--si-color-text-main);
   font-weight: var(--si-weight-semibold);
+}
+
+.path-details {
+  margin-top: 8px;
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-sm);
+}
+
+.path-details summary {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.path-narrative {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-inset);
+  color: var(--si-color-text-soft);
+  line-height: 1.65;
+}
+
+.path-narrative p {
+  margin: 0;
+}
+
+.path-boss-xp {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-inset);
+}
+
+.path-boss-xp__label,
+.path-boss-xp__value {
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-xs);
 }
 
 .path-constraints {

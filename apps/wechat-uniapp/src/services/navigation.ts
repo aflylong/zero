@@ -30,11 +30,12 @@ export function goToStart() {
   });
 }
 
-export function ensureOnboardingReady(onboardingCompleted: boolean) {
-  if (onboardingCompleted) {
-    return true;
-  }
-
+/**
+ * 软引导:首次进入(没填过 onboarding 也没启动过 journey)→ 跳到 start 页;
+ * 一旦做过任何一种,Tab 直接放行。
+ */
+export function ensureOnboardingReady(everStarted: boolean) {
+  if (everStarted) return true;
   goToStart();
   return false;
 }

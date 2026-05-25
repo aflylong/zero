@@ -40,6 +40,82 @@
         </GlassCard>
 
         <GlassCard>
+          <SectionLabel :icon="BellRing">提醒强度</SectionLabel>
+          <p class="muted-text">
+            提醒响起时,这些选项决定它有多明显。可以挨个开关,关掉的层不会触发。
+          </p>
+
+          <div class="settings-toggles">
+            <button
+              type="button"
+              class="settings-toggle"
+              :class="{ 'settings-toggle--on': prefs.desktopNotification }"
+              @click="togglePref('desktopNotification')"
+            >
+              <component
+                :is="prefs.desktopNotification ? CheckCircle2 : CircleDashed"
+                :size="14"
+                :stroke-width="iconStroke"
+              />
+              <span class="settings-toggle__name">桌面通知</span>
+              <span class="settings-toggle__desc">推送一条系统级通知,托盘里也能弹。</span>
+            </button>
+
+            <button
+              type="button"
+              class="settings-toggle"
+              :class="{ 'settings-toggle--on': prefs.sound }"
+              @click="togglePref('sound')"
+            >
+              <component
+                :is="prefs.sound ? Volume2 : VolumeX"
+                :size="14"
+                :stroke-width="iconStroke"
+              />
+              <span class="settings-toggle__name">铃声</span>
+              <span class="settings-toggle__desc">响起时同步播一声温和的双音「叮 — 叮」。</span>
+            </button>
+
+            <button
+              type="button"
+              class="settings-toggle"
+              :class="{ 'settings-toggle--on': prefs.focusWindow }"
+              @click="togglePref('focusWindow')"
+            >
+              <component
+                :is="prefs.focusWindow ? CheckCircle2 : CircleDashed"
+                :size="14"
+                :stroke-width="iconStroke"
+              />
+              <span class="settings-toggle__name">抢前台</span>
+              <span class="settings-toggle__desc">把窗口拉到最前(已最小化时自动恢复)。</span>
+            </button>
+
+            <button
+              type="button"
+              class="settings-toggle"
+              :class="{ 'settings-toggle--on': prefs.inAppBanner }"
+              @click="togglePref('inAppBanner')"
+            >
+              <component
+                :is="prefs.inAppBanner ? CheckCircle2 : CircleDashed"
+                :size="14"
+                :stroke-width="iconStroke"
+              />
+              <span class="settings-toggle__name">应用内浮层</span>
+              <span class="settings-toggle__desc">应用在前台时,从右上角滑入一个强提示。</span>
+            </button>
+          </div>
+
+          <div class="action-row">
+            <button type="button" class="btn btn-edit btn-sm" @click="testNotification">
+              <Sparkles :size="14" :stroke-width="iconStroke" />
+              <span>试一下提醒</span>
+            </button>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
           <SectionLabel :icon="Rocket">开机自启</SectionLabel>
           <div class="settings-row">
             <div class="settings-row__copy">
@@ -94,8 +170,14 @@
             <div class="settings-about__copy">
               <p class="settings-about__title">归零 · RE:ZERO</p>
               <p class="muted-text">用一天,重启你的人生。</p>
-              <p class="faint-text">版本 0.1.0 · Tauri 2 · 数据存在本地</p>
+              <p class="faint-text">版本 0.2.0 · Tauri 2 · 数据存在本地</p>
             </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-ghost btn-sm" @click="openPrivacy">
+              <ShieldCheck :size="14" :stroke-width="iconStroke" />
+              <span>隐私政策</span>
+            </button>
           </div>
         </GlassCard>
       </div>
@@ -109,13 +191,18 @@ import {
   Bell,
   BellRing,
   CheckCircle2,
+  CircleDashed,
   Database,
   Download,
   Info,
   Power,
   PowerOff,
   Rocket,
+  ShieldCheck,
+  Sparkles,
   Upload,
+  Volume2,
+  VolumeX,
 } from "lucide-vue-next";
 import {
   disable as disableAutostart,
@@ -123,7 +210,6 @@ import {
   isEnabled as isAutostartEnabled,
 } from "@tauri-apps/plugin-autostart";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   getNotificationAdapter,
   tokens,
@@ -151,6 +237,30 @@ const opClass = computed(() => ({
   "settings-op-hint--ok": lastOpKind.value === "ok",
   "settings-op-hint--warn": lastOpKind.value === "warn",
 }));
+
+const prefs = computed(() => store.state.data.notificationPreferences);
+
+function togglePref(key: keyof typeof prefs.value) {
+  store.updateNotificationPreferences({ [key]: !prefs.value[key] });
+}
+
+async function testNotification() {
+  const adapter = getNotificationAdapter();
+  // 桌面通知 + 声音 + 抢前台都按当前偏好走一次
+  if (prefs.value.desktopNotification) {
+    await adapter.notify({
+      id: `test-${Date.now()}`,
+      title: "测试提醒 · 这就是真实推送的样子",
+      body: "如果你听到「叮 — 叮」,说明铃声开关是打开的。\n窗口被拉到前台,说明抢前台是打开的。",
+      sound: prefs.value.sound,
+      focusWindow: prefs.value.focusWindow,
+    });
+  } else {
+    if (prefs.value.sound) await adapter.playSound?.();
+    if (prefs.value.focusWindow) await adapter.focusWindow?.();
+  }
+  flash("已触发一次测试提醒。", "ok");
+}
 
 onMounted(async () => {
   const adapter = getNotificationAdapter();
@@ -199,7 +309,8 @@ async function exportData() {
     });
     if (!target) return;
     const payload = store.exportData();
-    await writeTextFile(target, JSON.stringify(payload, null, 2));
+    const fs = await import("@tauri-apps/plugin-fs");
+    await fs.writeTextFile(target, JSON.stringify(payload, null, 2));
     flash("备份已导出", "ok");
   } catch (err) {
     console.error("[settings] export failed", err);
@@ -218,7 +329,8 @@ async function importData() {
     });
     const path = Array.isArray(picked) ? picked[0] : picked;
     if (!path) return;
-    const raw = await readTextFile(path);
+    const fs = await import("@tauri-apps/plugin-fs");
+    const raw = await fs.readTextFile(path);
     const parsed = JSON.parse(raw) as Partial<AppData>;
     if (!parsed || typeof parsed !== "object") {
       flash("文件格式不对", "warn");
@@ -241,6 +353,10 @@ function flash(msg: string, kind: "ok" | "warn") {
     lastOpMessage.value = "";
     lastOpKind.value = "";
   }, 3200);
+}
+
+function openPrivacy() {
+  window.location.hash = "#/settings/privacy";
 }
 </script>
 
@@ -323,5 +439,66 @@ function flash(msg: string, kind: "ok" | "warn") {
 
 .settings-op-hint--warn {
   color: var(--si-color-warning);
+}
+
+.settings-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--si-color-border-subtle);
+  border-radius: var(--si-radius-md);
+  background: transparent;
+  text-align: left;
+  color: var(--si-color-text-faint);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.settings-toggle:hover {
+  background: var(--si-color-surface-card-soft);
+  color: var(--si-color-text-soft);
+}
+
+.settings-toggle--on {
+  border-color: var(--si-color-brand-border);
+  background: var(--si-color-brand-bg-soft);
+  color: var(--si-color-brand-text);
+}
+
+.settings-toggle :deep(svg) {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: currentColor;
+}
+
+.settings-toggle__name {
+  grid-row: 1;
+  font-size: var(--si-font-md);
+  font-weight: var(--si-weight-semibold);
+  color: var(--si-color-text-main);
+}
+
+.settings-toggle--on .settings-toggle__name {
+  color: var(--si-color-brand-text);
+}
+
+.settings-toggle__desc {
+  grid-row: 2;
+  font-size: var(--si-font-xs);
+  line-height: 1.55;
+  color: var(--si-color-text-faint);
 }
 </style>

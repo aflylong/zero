@@ -1,29 +1,39 @@
 <template>
   <PageShell tab-key="today" title="今日">
     <view class="today-page">
-      <view v-if="!onboardingCompleted" class="today-welcome">
-        <SectionLabel>还没设过方向和目标</SectionLabel>
-        <text class="today-welcome__title">建议先花 20 分钟读一遍原文,想清楚再来设置。</text>
-        <text class="today-welcome__body">读完之后你会知道自己要去哪、不要回到哪。到时候再来填方向、身份和目标,每一个字都是你自己想出来的。</text>
+      <view v-if="!journeyStarted" class="today-welcome">
+        <SectionLabel>还没跑过一天流程</SectionLabel>
+        <text class="today-welcome__title">建议先花 20 分钟读原文,再留出整整一天答完 22 题。</text>
+        <text class="today-welcome__body">
+          这套系统的灵魂是「严格按一天流程跑一遍」——11 道早晨开掘、9 道白天打断、5 步夜晚综合。
+          不跑这一遍,后面再多打卡也只是在表面。
+        </text>
         <view class="action-row">
           <button class="pill-button" @tap="openArticleReader">先读原文</button>
-          <button class="ghost-button" @tap="openOnboarding">我想清楚了,直接设置</button>
+          <button class="ghost-button" @tap="openJourneyMorning">开始一天流程</button>
         </view>
       </view>
 
       <view class="today-identity">
         <SectionLabel>你是谁</SectionLabel>
-        <text class="hero-title today-identity__title">{{ identityProfile.statement }}</text>
-        <text class="today-identity__body">不回到：{{ identityProfile.antiIdentityText }}</text>
+        <text class="hero-title today-identity__title">
+          {{ identityProfile.statement || "先决定你是谁" }}
+        </text>
+        <text class="today-identity__body">
+          不再回去:{{ identityProfile.antiIdentityText || "把那个你不愿再扮演的旧版本说清楚。" }}
+        </text>
       </view>
 
       <GradientHeroCard card-class="today-quest">
         <SectionLabel>今日主线</SectionLabel>
-        <text class="page-title today-quest__title">{{ todayPlan.mainQuestTitle }}</text>
-        <text class="body-text">{{ todayPlan.mainQuestDescription }}</text>
+        <text class="page-title today-quest__title">
+          {{ todayPlan.yearGoalTitle || "先把这一年要走到哪定下来" }}
+        </text>
+        <text class="body-text">{{ todayPlan.yearGoalDescription || todayPlan.reminderHeadline }}</text>
         <view class="today-primary-actions">
-          <button class="pill-button" @tap="openTodayNote">写观察</button>
-          <button class="ghost-button" @tap="openNightReview">进入复盘</button>
+          <button class="pill-button" @tap="openJourneyMorning">一天流程</button>
+          <button class="ghost-button" @tap="openTodayNote">写观察</button>
+          <button class="ghost-button" @tap="openSynthesis">夜间综合</button>
         </view>
         <button class="today-note-line" @tap="openTodayNote">
           <text class="today-note-line__label">今日观察</text>
@@ -40,13 +50,13 @@
       <GlassCard card-class="today-section">
         <view class="today-section__head">
           <view class="today-section__copy">
-            <SectionLabel>身份证明</SectionLabel>
+            <SectionLabel>每日杠杆</SectionLabel>
             <text class="today-section__title">{{ proofProgressLabel }}</text>
           </view>
           <text class="today-section__meta">{{ completedProofRuleIds.length }}/{{ proofRules.length }}</text>
         </view>
 
-        <view class="today-proof-list">
+        <view v-if="proofRules.length" class="today-proof-list">
           <button
             v-for="rule in proofRules"
             :key="rule.id"
@@ -63,12 +73,15 @@
             </view>
           </button>
         </view>
+        <text v-else class="muted-text">
+          还没有生效的每日杠杆。完成一次「夜间综合」后,L3 的明日时间块会自动升格。
+        </text>
       </GlassCard>
 
       <GlassCard card-class="today-section today-progress">
         <view class="today-section__head">
           <view class="today-section__copy">
-            <SectionLabel>今日进度</SectionLabel>
+            <SectionLabel>今日推进度</SectionLabel>
             <text class="today-section__title">{{ alignmentHeadline }}</text>
           </view>
           <text class="today-section__meta">{{ alignmentScore }}%</text>
@@ -91,6 +104,7 @@
         <text class="muted-text">{{ reminderStatusText }}</text>
         <view class="today-links">
           <button class="ghost-button" @tap="openReminderSettings">提醒设置</button>
+          <button class="ghost-button" @tap="openJourneyDay">白天 9 题</button>
         </view>
       </GlassCard>
     </view>
@@ -105,14 +119,18 @@ import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import ReminderPrompt from "@/components/ReminderPrompt.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderAction } from "@/types/app";
 
 const store = useAppStore();
 
 const identityProfile = computed(() => store.state.data.identityProfile);
-const onboardingCompleted = computed(() => store.state.data.onboardingCompleted);
+const journeyStarted = computed(
+  () =>
+    store.state.data.journeyCompleted ||
+    store.state.data.onboardingCompleted ||
+    Boolean(store.state.data.morningExcavation.startedAt),
+);
 const todayPlan = computed(() => store.today.value.plan);
 const todaySnapshot = computed(() => store.today.value.snapshot);
 const proofRules = computed(() => store.activeProofRules());
@@ -123,93 +141,72 @@ const primaryPrompt = computed(() => pendingPrompts.value[0] ?? null);
 const extraPromptCount = computed(() => Math.max(0, pendingPrompts.value.length - 1));
 
 const proofProgressLabel = computed(() => {
-  if (!proofRules.value.length) {
-    return "先建立今天要证明的动作";
-  }
-
-  if (completedProofRuleIds.value.length === proofRules.value.length) {
-    return "今天的核心证明已经全部完成";
-  }
-
-  return "先把今天最关键的动作做出来";
+  if (!proofRules.value.length) return "先把今天的 2-3 个时间块定下来";
+  if (completedProofRuleIds.value.length === proofRules.value.length)
+    return "今天的杠杆全部到手";
+  return "把今天最关键的那个动作先做掉";
 });
 
 const alignmentHeadline = computed(() => {
-  if (alignmentScore.value >= 80) {
-    return "节奏很稳，继续保持。";
-  }
-
-  if (alignmentScore.value >= 60) {
-    return "整体在线，再压实一点。";
-  }
-
-  return "今天还需要一次明显的纠偏。";
+  if (alignmentScore.value >= 70) return "节奏稳得住,继续这样跑。";
+  if (alignmentScore.value >= 40) return "在线,但还能压实一点。";
+  if (alignmentScore.value > 0) return "今天有些松动,做一个杠杆就开始拉回来。";
+  return "今天还没留下证据。先做最小的一个真实动作。";
 });
 
 const alignmentHint = computed(() => {
-  if (!proofRules.value.length) {
-    return "去身份页补上证明法则后，这里的分数会更有意义。";
-  }
-
-  return `${completedProofRuleIds.value.length}/${proofRules.value.length} 条证明已完成，提醒处理和今日观察也会影响分数。`;
+  if (!proofRules.value.length)
+    return "去身份页或夜间综合 L3 添加杠杆,这里的分数才有意义。";
+  return `${completedProofRuleIds.value.length}/${proofRules.value.length} 条杠杆已完成,提醒处理与观察记录也会算进分数。`;
 });
 
 const notePreview = computed(() => {
   const note = todaySnapshot.value.todayNote.trim();
-  return note || "还没有写今日观察。用一句话把今天最真实的状态留下来。";
+  return note || "今天还没写。一句话就行——把现在的真实状态留下来。";
 });
 
 const reminderStatusTitle = computed(() => {
-  if (extraPromptCount.value > 0) {
-    return `还有 ${extraPromptCount.value} 条提醒待处理`;
-  }
-
-  return "当前没有待处理提醒";
+  if (extraPromptCount.value > 0) return `还有 ${extraPromptCount.value} 条提醒等你处理`;
+  return "现在没有要处理的提醒";
 });
 
 const reminderStatusText = computed(() => {
-  if (primaryPrompt.value) {
-    return `先处理「${primaryPrompt.value.label}」，剩余提醒会继续排队。`;
-  }
-
-  return "白天提醒和夜间复盘时间都可以在提醒设置页调整。";
+  if (primaryPrompt.value)
+    return `先处理「${primaryPrompt.value.label}」,剩下的会排着队来。`;
+  return "白天 6 + 通勤 3,可以在「提醒设置」里调整或关闭。";
 });
 
 function handleReminderAction(ruleId: string, action: ReminderAction) {
   const prompt = pendingPrompts.value.find((item) => item.ruleId === ruleId);
   store.resolveReminder(ruleId, action);
-
-  if (action === "complete" && prompt?.kind === "night") {
-    openNightReview();
+  if (action === "complete" && prompt?.promptKey) {
+    if (prompt.kind === "morning") openJourneyMorning();
+    else if (prompt.kind === "night") openSynthesis();
+    else openJourneyDay();
   }
 }
 
-function openNightReview() {
-  uni.navigateTo({ url: "/pages/night-review/index" });
+function openJourneyMorning() {
+  uni.navigateTo({ url: "/pages/journey-morning/index" });
 }
-
+function openJourneyDay() {
+  uni.navigateTo({ url: "/pages/journey-day/index" });
+}
+function openSynthesis() {
+  uni.navigateTo({ url: "/pages/journey-night/index" });
+}
 function openReminderSettings() {
   uni.navigateTo({ url: "/pages/reminder-settings/index" });
 }
-
 function openTodayNote() {
   uni.navigateTo({ url: "/pages/today-note/index" });
 }
-
 function openArticleReader() {
   uni.navigateTo({ url: "/pages/article-reader/index" });
 }
 
-function openOnboarding() {
-  uni.navigateTo({ url: "/pages/onboarding/index" });
-}
-
 onShow(() => {
   store.initialize();
-  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
-    return;
-  }
-
   store.refreshReminderPrompts();
 });
 </script>
@@ -221,8 +218,7 @@ onShow(() => {
   gap: 26rpx;
 }
 
-.today-section,
-.today-review {
+.today-section {
   display: flex;
   flex-direction: column;
   gap: 18rpx;
@@ -230,7 +226,7 @@ onShow(() => {
 
 .today-section__title {
   color: #f5f5f5;
-  font-size: 34rpx;
+  font-size: 32rpx;
   line-height: 1.38;
 }
 
@@ -259,12 +255,12 @@ onShow(() => {
 }
 
 .today-quest__title {
-  font-size: 40rpx;
+  font-size: 38rpx;
 }
 
 .today-primary-actions {
   display: flex;
-  gap: 16rpx;
+  gap: 14rpx;
   flex-wrap: wrap;
   padding-top: 4rpx;
 }
@@ -380,10 +376,6 @@ onShow(() => {
   flex-wrap: wrap;
 }
 
-.today-review__button {
-  min-width: 220rpx;
-}
-
 .today-welcome {
   display: flex;
   flex-direction: column;
@@ -396,5 +388,4 @@ onShow(() => {
 }
 .today-welcome__title { color: #f5f5f5; font-size: 36rpx; line-height: 1.4; font-weight: 600; }
 .today-welcome__body { color: #d4d4d8; font-size: 26rpx; line-height: 1.6; }
-
 </style>

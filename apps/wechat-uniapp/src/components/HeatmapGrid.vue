@@ -8,7 +8,7 @@
         v-for="day in days"
         :key="day.dateKey"
         class="heatmap__cell"
-        :class="cellClass(day.alignmentScore, day.dateKey === activeDateKey)"
+        :class="cellClass(day)"
         @tap="$emit('select', day.dateKey)"
       >
         <text class="heatmap__label">{{ day.label }}</text>
@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import type { RecordDay } from "@/types/app";
 
-defineProps<{
+const props = defineProps<{
   days: RecordDay[];
   activeDateKey?: string;
 }>();
@@ -36,11 +36,26 @@ defineEmits<{
 
 const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
 
-function cellClass(score: number | null, active: boolean) {
+/**
+ * 4 档梯度,与「今日推进度」软化口径一致(不再用 60 分二分):
+ *   未追踪 / 0 分:empty
+ *   1-39   :低,faint
+ *   40-69  :中,mid
+ *   70+    :高,strong
+ */
+function cellClass(day: RecordDay) {
+  const active = day.dateKey === props.activeDateKey;
+  const hasEvidence =
+    (day.alignmentScore ?? 0) > 0 ||
+    Boolean(day.note?.trim()) ||
+    day.completedProofCount > 0 ||
+    day.hasNightReview;
+  const score = day.alignmentScore ?? 0;
   return {
-    "heatmap__cell--empty": score === null,
-    "heatmap__cell--off": score !== null && score < 60,
-    "heatmap__cell--aligned": score !== null && score >= 60,
+    "heatmap__cell--empty": !hasEvidence,
+    "heatmap__cell--faint": hasEvidence && score < 40,
+    "heatmap__cell--mid": hasEvidence && score >= 40 && score < 70,
+    "heatmap__cell--strong": hasEvidence && score >= 70,
     "heatmap__cell--active": active,
   };
 }
@@ -78,14 +93,17 @@ function cellClass(score: number | null, active: boolean) {
   background: rgba(24, 24, 27, 0.68);
 }
 
-.heatmap__cell--aligned {
+.heatmap__cell--faint {
+  border-color: rgba(16, 185, 129, 0.18);
+  background: rgba(6, 95, 70, 0.10);
+}
+.heatmap__cell--mid {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(6, 95, 70, 0.20);
+}
+.heatmap__cell--strong {
   border-color: rgba(16, 185, 129, 0.32);
   background: rgba(6, 95, 70, 0.34);
-}
-
-.heatmap__cell--off {
-  border-color: rgba(82, 82, 91, 0.72);
-  background: rgba(39, 39, 42, 0.85);
 }
 
 .heatmap__cell--active {

@@ -30,7 +30,7 @@
           </view>
           <view class="record-detail-hero__fact">
             <text class="record-detail-hero__fact-value">{{ detail.hasNightReview ? "已写" : "未写" }}</text>
-            <text class="record-detail-hero__fact-label">夜间复盘</text>
+            <text class="record-detail-hero__fact-label">夜间综合</text>
           </view>
         </view>
       </view>
@@ -38,9 +38,9 @@
       <view v-if="hasAnyData" class="record-detail-stack">
         <GlassCard card-class="record-detail-card">
           <SectionLabel>当天主线</SectionLabel>
-          <text class="record-detail-card__title">{{ detail.mainQuestTitle }}</text>
-          <text class="body-text">{{ detail.mainQuestDescription }}</text>
-          <text class="record-detail-card__meta">对齐身份：{{ detail.focusTheme || "尚未定义" }}</text>
+          <text class="record-detail-card__title">{{ detail.yearGoalTitle || "尚未定义" }}</text>
+          <text class="body-text">{{ detail.yearGoalDescription }}</text>
+          <text class="record-detail-card__meta">对齐身份:{{ detail.focusTheme || "尚未定义" }}</text>
         </GlassCard>
 
         <GlassCard card-class="record-detail-card">
@@ -78,27 +78,59 @@
           <text class="body-text">{{ detail.todayNote.trim() || "这一天没有留下今日观察。" }}</text>
         </GlassCard>
 
-        <GlassCard card-class="record-detail-card">
-          <SectionLabel>夜间复盘</SectionLabel>
-          <view v-if="detail.hasNightReview" class="record-detail-review">
-            <view class="record-detail-review__block">
-              <text class="record-detail-review__label">赢点</text>
-              <text class="body-text">{{ detail.winsText || "未填写" }}</text>
-            </view>
-            <view class="record-detail-review__block">
-              <text class="record-detail-review__label">偏离点</text>
-              <text class="body-text">{{ detail.missesText || "未填写" }}</text>
-            </view>
-            <view class="record-detail-review__block">
-              <text class="record-detail-review__label">反思</text>
-              <text class="body-text">{{ detail.reflectionText || "未填写" }}</text>
-            </view>
-            <view class="record-detail-review__block">
-              <text class="record-detail-review__label">明日修正</text>
-              <text class="body-text">{{ detail.tomorrowFixesText || "未填写" }}</text>
+        <GlassCard v-if="detail.dayPromptResponses.length" card-class="record-detail-card">
+          <SectionLabel>白天打断作答</SectionLabel>
+          <view class="record-detail-list">
+            <view
+              v-for="r in detail.dayPromptResponses"
+              :key="`${r.promptKey}-${r.answeredAt}`"
+              class="record-detail-prompt"
+            >
+              <text class="record-detail-prompt__key">{{ r.promptKey }}</text>
+              <text class="record-detail-prompt__answer">{{ r.answer }}</text>
+              <text class="record-detail-prompt__meta">{{ formatDateTime(r.answeredAt) }}</text>
             </view>
           </view>
-          <text v-else class="muted-text">这一天还没有写夜间复盘。</text>
+        </GlassCard>
+
+        <GlassCard v-if="detail.synthesis" card-class="record-detail-card">
+          <SectionLabel>夜间综合(N1-N5)</SectionLabel>
+          <view class="record-detail-review">
+            <view class="record-detail-review__block">
+              <text class="record-detail-review__label">N1 卡住的真正原因</text>
+              <text class="body-text">{{ detail.synthesis.stuckReason || "未填写" }}</text>
+            </view>
+            <view class="record-detail-review__block">
+              <text class="record-detail-review__label">N2 命名敌人</text>
+              <text class="body-text">{{ detail.synthesis.enemyName || "未填写" }}</text>
+            </view>
+            <view class="record-detail-review__block">
+              <text class="record-detail-review__label">N3 反愿景压缩</text>
+              <text class="body-text">{{ detail.synthesis.antiVisionMantra || "未填写" }}</text>
+            </view>
+            <view class="record-detail-review__block">
+              <text class="record-detail-review__label">N4 愿景 MVP</text>
+              <text class="body-text">{{ detail.synthesis.visionMantra || "未填写" }}</text>
+            </view>
+            <view class="record-detail-review__block">
+              <text class="record-detail-review__label">N5 三透镜</text>
+              <text class="body-text">一年:{{ detail.synthesis.yearLens || "—" }}</text>
+              <text class="body-text">一月:{{ detail.synthesis.monthLens || "—" }}</text>
+              <text v-if="detail.synthesis.tomorrowBlocks.length" class="body-text">明日时间块:</text>
+              <view
+                v-for="b in detail.synthesis.tomorrowBlocks"
+                :key="b.id"
+                class="record-detail-block"
+              >
+                <text class="record-detail-block__title">· {{ b.title }}</text>
+                <text v-if="b.timeHint" class="record-detail-block__hint">{{ b.timeHint }}</text>
+              </view>
+            </view>
+          </view>
+        </GlassCard>
+        <GlassCard v-else card-class="record-detail-card">
+          <SectionLabel>夜间综合</SectionLabel>
+          <text class="muted-text">这一天还没写夜间综合。</text>
         </GlassCard>
 
         <GlassCard v-if="detail.actionLogs.length" card-class="record-detail-card">
@@ -120,7 +152,7 @@
         <SectionLabel>暂无快照</SectionLabel>
         <text class="record-detail-empty__title">这一天还没有形成完整记录。</text>
         <text class="muted-text">
-          没有证明动作、提醒处理、今日观察或夜间复盘时，这里会保持空态。你仍然可以翻看前后日期，确认系统在哪些天真正运行过。
+          没有证明动作、提醒处理、今日观察或夜间综合时,这里会保持空态。
         </text>
       </GlassCard>
     </view>
@@ -153,7 +185,6 @@ import GlassCard from "@/components/GlassCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { parseDateKey } from "@/services/date";
-import { ensureOnboardingReady } from "@/services/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ReminderAction } from "@/types/app";
 
@@ -174,19 +205,11 @@ const scoreLabel = computed(() =>
   detail.value.alignmentScore === null ? "--" : String(detail.value.alignmentScore),
 );
 const scoreHint = computed(() => {
-  if (detail.value.alignmentScore === null) {
-    return "这一天没有形成评分，所以会显示为空。";
-  }
-
-  if (detail.value.alignmentScore >= 80) {
-    return "稳定推进：行动和身份高度对齐。";
-  }
-
-  if (detail.value.alignmentScore >= 60) {
-    return "基本对齐：主要方向在线，但还有松动。";
-  }
-
-  return "偏离：这一天更容易被惯性、分心或拖延带走。";
+  if (detail.value.alignmentScore === null) return "这一天没有形成评分。";
+  if (detail.value.alignmentScore >= 70) return "稳定推进:留下了多种推进证据。";
+  if (detail.value.alignmentScore >= 40) return "在线:有真实动作,还能再压实。";
+  if (detail.value.alignmentScore > 0) return "微弱推进:留下了证据,但还很轻。";
+  return "这一天没有留下推进证据。";
 });
 const hasAnyData = computed(
   () =>
@@ -194,19 +217,14 @@ const hasAnyData = computed(
     detail.value.completedProofCount > 0 ||
     detail.value.todayNote.trim().length > 0 ||
     detail.value.reminderActions.length > 0 ||
-    detail.value.hasNightReview ||
+    Boolean(detail.value.synthesis) ||
+    detail.value.dayPromptResponses.length > 0 ||
     detail.value.actionLogs.length > 0,
 );
 
 function reminderActionLabel(action: ReminderAction) {
-  if (action === "complete") {
-    return "完成提醒";
-  }
-
-  if (action === "snooze") {
-    return "稍后提醒";
-  }
-
+  if (action === "complete") return "完成提醒";
+  if (action === "snooze") return "稍后提醒";
   return "跳过提醒";
 }
 
@@ -224,16 +242,12 @@ function resolveDateKey(input?: string) {
 }
 
 function jumpDate(dateKey: string | null, replace = false) {
-  if (!dateKey) {
-    return;
-  }
-
+  if (!dateKey) return;
   const url = `/pages/record-detail/index?date=${dateKey}`;
   if (replace) {
     uni.redirectTo({ url });
     return;
   }
-
   uni.navigateTo({ url });
 }
 
@@ -243,9 +257,6 @@ onLoad((query) => {
 
 onShow(() => {
   store.initialize();
-  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
-    return;
-  }
 });
 </script>
 
@@ -290,7 +301,7 @@ onShow(() => {
 .record-detail-card__title,
 .record-detail-empty__title {
   color: #f5f5f5;
-  font-size: 34rpx;
+  font-size: 32rpx;
   line-height: 1.4;
 }
 
@@ -302,7 +313,7 @@ onShow(() => {
 
 .record-detail-hero__score-value {
   color: #d1fae5;
-  font-size: 72rpx;
+  font-size: 64rpx;
   line-height: 0.94;
   font-weight: 300;
 }
@@ -323,47 +334,47 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
-  padding: 20rpx;
-  border-radius: 20rpx;
+  padding: 18rpx;
+  border-radius: 18rpx;
   background: rgba(10, 10, 11, 0.34);
 }
 
 .record-detail-hero__fact-value {
   color: #f5f5f5;
-  font-size: 28rpx;
+  font-size: 24rpx;
   line-height: 1.2;
 }
 
 .record-detail-hero__fact-label,
 .record-detail-card__meta,
 .record-detail-review__label,
-.record-detail-action__meta {
+.record-detail-action__meta,
+.record-detail-prompt__meta {
   color: #71717a;
   font-size: 20rpx;
-  line-height: 1.5;
 }
 
 .record-detail-card,
 .record-detail-empty {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 16rpx;
 }
 
 .record-detail-list {
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .record-detail-list__item,
 .record-detail-action {
   display: flex;
-  gap: 14rpx;
+  gap: 12rpx;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 24rpx;
-  border-radius: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
   background: rgba(10, 10, 11, 0.34);
 }
 
@@ -377,21 +388,51 @@ onShow(() => {
 }
 
 .record-detail-list__text,
-.record-detail-action__title {
+.record-detail-action__title,
+.record-detail-prompt__answer {
   flex: 1;
   color: #d4d4d8;
-  font-size: 26rpx;
-  line-height: 1.6;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.record-detail-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 14rpx;
+  background: rgba(10, 10, 11, 0.34);
+}
+.record-detail-prompt__key {
+  color: #d1fae5;
+  font-size: 20rpx;
+  font-weight: 600;
 }
 
 .record-detail-review {
-  gap: 18rpx;
+  gap: 16rpx;
 }
 
 .record-detail-review__block {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
+}
+
+.record-detail-block {
+  display: flex;
+  gap: 8rpx;
+  flex-direction: column;
+  padding-left: 12rpx;
+}
+.record-detail-block__title {
+  color: #d4d4d8;
+  font-size: 22rpx;
+}
+.record-detail-block__hint {
+  color: #71717a;
+  font-size: 20rpx;
 }
 
 .record-detail-footer {

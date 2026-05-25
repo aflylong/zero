@@ -23,9 +23,17 @@
 
     <div class="sidebar__foot">
       <SidebarLink
+        v-if="!journeyCompleted"
+        to="/journey/morning"
+        label="一天流程"
+        :description="journeyStarted ? '继续未完成的题' : '严格按原文跑 22 题'"
+      >
+        <Sun :size="iconSize" :stroke-width="iconStroke" />
+      </SidebarLink>
+      <SidebarLink
         v-if="needsOnboarding"
         to="/onboarding"
-        label="开始设置"
+        label="快速设置"
         description="3 分钟把方向定下来"
       >
         <Rocket :size="iconSize" :stroke-width="iconStroke" />
@@ -56,6 +64,10 @@ const iconStroke = tokens.iconStrokeWidth;
 const store = useAppStore();
 
 const needsOnboarding = computed(() => !store.state.data.onboardingCompleted);
+const journeyStarted = computed(() =>
+  Boolean(store.state.data.morningExcavation.startedAt),
+);
+const journeyCompleted = computed(() => store.state.data.journeyCompleted);
 
 const navItems = [
   {

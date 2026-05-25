@@ -1,18 +1,21 @@
 /**
  * Notification adapter with graceful fallback.
  *
- * Inside a Tauri window we use the OS notification plugin so reminders fire
- * even when the window is hidden to tray.  In a plain browser we fall back
- * to the Web Notifications API.  On environments with neither we no-op.
+ * 在 Tauri 内:用 OS 通知插件 + 把窗口拉到前台 + 播放一声短铃声。
+ * 在浏览器内:Web Notifications API + WebAudio 短铃声(允许在用户交互后)。
+ * 没有任何能力时:静默 noop。
  */
 
 import type { NotificationAdapter, NotificationPayload } from "@guiling/core";
 
 type TauriNotif = typeof import("@tauri-apps/plugin-notification");
+type TauriWindow = typeof import("@tauri-apps/api/window");
 
 let tauriNotif: TauriNotif | null = null;
+let tauriWindow: TauriWindow | null = null;
 let mode: "tauri" | "web" | "none" = "none";
 let initPromise: Promise<void> | null = null;
+let audioCtx: AudioContext | null = null;
 
 function isTauriRuntime(): boolean {
   if (typeof window === "undefined") return false;
@@ -30,6 +33,11 @@ async function ensureInit(): Promise<void> {
     if (isTauriRuntime()) {
       try {
         tauriNotif = await import("@tauri-apps/plugin-notification");
+        try {
+          tauriWindow = await import("@tauri-apps/api/window");
+        } catch (err) {
+          console.warn("[notification] tauri window api import failed", err);
+        }
         mode = "tauri";
         return;
       } catch (err) {
@@ -45,6 +53,76 @@ async function ensureInit(): Promise<void> {
   return initPromise;
 }
 
+/**
+ * 用 WebAudio 合成一声温和的「叮 — 叮」双音,无外部音频资源依赖。
+ * - 第一声 880Hz 80ms,第二声 1318.5Hz 80ms,中间间隔 60ms
+ * - 用 sine 波 + 短促 attack/release 包络,听感不刺耳
+ * 注意:浏览器有 autoplay 限制,但 Tauri webview 默认允许。
+ */
+async function playChime(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    if (!audioCtx) {
+      const Ctx =
+        (window.AudioContext as typeof AudioContext | undefined) ??
+        ((window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext);
+      if (!Ctx) return;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === "suspended") {
+      try {
+        await audioCtx.resume();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+
+    const playTone = (freq: number, startAt: number, duration = 0.08) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, startAt);
+      gain.gain.linearRampToValueAtTime(0.18, startAt + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startAt);
+      osc.stop(startAt + duration + 0.02);
+    };
+
+    playTone(880, now);
+    playTone(1318.5, now + 0.14);
+  } catch (err) {
+    console.warn("[notification] chime failed", err);
+  }
+}
+
+async function focusAppWindow(): Promise<void> {
+  if (mode === "tauri" && tauriWindow) {
+    try {
+      const win = tauriWindow.getCurrentWindow();
+      if (await win.isMinimized()) await win.unminimize();
+      if (!(await win.isVisible())) await win.show();
+      await win.setFocus();
+    } catch (err) {
+      console.warn("[notification] focus window failed", err);
+    }
+    return;
+  }
+  if (mode === "web" && typeof window !== "undefined") {
+    try {
+      window.focus();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export const tauriNotificationAdapter: NotificationAdapter = {
   async notify(payload: NotificationPayload): Promise<void> {
     await ensureInit();
@@ -55,8 +133,18 @@ export const tauriNotificationAdapter: NotificationAdapter = {
         const p = await tauriNotif.requestPermission();
         granted = p === "granted";
       }
-      if (!granted) return;
-      tauriNotif.sendNotification({ title: payload.title, body: payload.body });
+      if (granted) {
+        try {
+          tauriNotif.sendNotification({
+            title: payload.title,
+            body: payload.body,
+          });
+        } catch (err) {
+          console.warn("[notification] send failed", err);
+        }
+      }
+      if (payload.sound !== false) await playChime();
+      if (payload.focusWindow) await focusAppWindow();
       return;
     }
 
@@ -74,6 +162,8 @@ export const tauriNotificationAdapter: NotificationAdapter = {
       } catch (err) {
         console.warn("[notification] web notify failed", err);
       }
+      if (payload.sound !== false) await playChime();
+      if (payload.focusWindow) await focusAppWindow();
     }
   },
 
@@ -107,5 +197,15 @@ export const tauriNotificationAdapter: NotificationAdapter = {
     }
     if (mode === "web") return Notification.permission === "granted";
     return false;
+  },
+
+  async playSound(): Promise<void> {
+    await ensureInit();
+    await playChime();
+  },
+
+  async focusWindow(): Promise<void> {
+    await ensureInit();
+    await focusAppWindow();
   },
 };

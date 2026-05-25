@@ -4,17 +4,33 @@
       <view class="path-hero">
         <view class="path-hero__head">
           <SectionLabel>愿景</SectionLabel>
-          <button class="ghost-button" @tap="openPathEditor">调整道路</button>
+          <button class="ghost-button" @tap="openPathEditor">编辑道路</button>
         </view>
         <text class="path-hero__title">{{ visionPreview }}</text>
+        <text v-if="threeYearTuesday" class="muted-text">三年后周二:{{ threeYearTuesday }}</text>
+        <text v-if="oneThingThisWeek" class="path-week">这周一件事:{{ oneThingThisWeek }}</text>
       </view>
 
       <view class="path-splits">
-        <SectionLabel>为什么必须改变</SectionLabel>
-        <text class="body-text">{{ whyChangePreview }}</text>
-        <view class="path-splits__divider" />
-        <text class="path-splits__meta-label">反愿景</text>
+        <SectionLabel>反愿景</SectionLabel>
         <text class="path-card__warning">{{ antiVisionPreview }}</text>
+        <view v-if="hasAntiNarrative" class="path-narrative">
+          <text v-if="fiveYearTuesday" class="path-narrative__line">
+            <text class="path-narrative__tag">5 年:</text>{{ fiveYearTuesday }}
+          </text>
+          <text v-if="tenYearTuesday" class="path-narrative__line">
+            <text class="path-narrative__tag">10 年:</text>{{ tenYearTuesday }}
+          </text>
+          <text v-if="endOfLife" class="path-narrative__line">
+            <text class="path-narrative__tag">尽头:</text>{{ endOfLife }}
+          </text>
+        </view>
+      </view>
+
+      <view class="path-splits">
+        <SectionLabel>最近一次「命名敌人」</SectionLabel>
+        <text class="body-text">{{ enemyNameDisplay }}</text>
+        <text class="muted-text">来自最近一次夜间综合(N2)。每天复盘时它会自动更新。</text>
       </view>
 
       <GradientHeroCard card-class="path-quest">
@@ -63,7 +79,6 @@ import { onShow } from "@dcloudio/uni-app";
 import GradientHeroCard from "@/components/GradientHeroCard.vue";
 import PageShell from "@/components/PageShell.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
-import { ensureOnboardingReady } from "@/services/navigation";
 import { articleSections, articleTitle } from "@/static/content/article";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -72,36 +87,29 @@ const store = useAppStore();
 const visionPreview = computed(
   () =>
     store.state.data.visionProfile.visionText.trim() ||
-    "先把你真正想去的生活画面写清楚，这里会成为整个系统的远方。",
+    "把你想去的生活画面写清楚。这里是整个系统的远方。",
 );
 const antiVisionPreview = computed(
   () =>
     store.state.data.visionProfile.antiVisionText.trim() ||
-    "把你不愿回去的生活说清楚，它会在你松掉的时候把你拉回来。",
+    "把你不愿回去的生活说清楚。它会在你松懈时把你拽回来。",
 );
-const whyChangePreview = computed(
-  () =>
-    store.state.data.visionProfile.whyChangeText.trim() ||
-    "把改变写成必须发生的理由，而不是一阵情绪。",
+const fiveYearTuesday = computed(() => store.state.data.visionProfile.fiveYearTuesday.trim());
+const tenYearTuesday = computed(() => store.state.data.visionProfile.tenYearTuesday.trim());
+const endOfLife = computed(() => store.state.data.visionProfile.endOfLife.trim());
+const threeYearTuesday = computed(() => store.state.data.visionProfile.threeYearTuesday.trim());
+const oneThingThisWeek = computed(() => store.state.data.visionProfile.oneThingThisWeek.trim());
+
+const hasAntiNarrative = computed(
+  () => Boolean(fiveYearTuesday.value || tenYearTuesday.value || endOfLife.value),
 );
-const mainQuestTitle = computed(
-  () => store.state.data.visionProfile.mainQuestTitle.trim() || "先定义这一阶段的主线",
-);
-const mainQuestDescription = computed(
-  () =>
-    store.state.data.visionProfile.mainQuestDescription.trim() ||
-    "把这一周最重要的推进方向写下来,今日页才有真正的主线感。",
-);
+
 const yearGoalTitle = computed(
-  () =>
-    store.state.data.visionProfile.yearGoal.trim() ||
-    store.state.data.visionProfile.mainQuestTitle.trim() ||
-    "先定下这一年要走到哪。",
+  () => store.state.data.visionProfile.yearGoal.trim() || "先定下这一年要走到哪。",
 );
 const yearGoalDesc = computed(
   () =>
     store.state.data.visionProfile.yearGoalDescription.trim() ||
-    store.state.data.visionProfile.mainQuestDescription.trim() ||
     "一年后什么必须为真,你才会承认自己赢了?",
 );
 const monthProjectTitle = computed(
@@ -116,26 +124,29 @@ const constraints = computed(() =>
   store.state.data.visionProfile.constraints.filter((c) => c.trim()),
 );
 const articleSummary = computed(
-  () => articleSections[0]?.summary ?? "阅读原文，理解这套系统为什么能真正运转起来。",
+  () => articleSections[0]?.summary ?? "阅读原文,理解这套系统为什么能真正运转起来。",
 );
 
+const enemyNameDisplay = computed(() => {
+  const map = store.state.data.nightSynthesisByDate ?? {};
+  const keys = Object.keys(map).sort();
+  for (let i = keys.length - 1; i >= 0; i -= 1) {
+    const ns = map[keys[i]];
+    if (ns?.enemyName?.trim()) return ns.enemyName.trim();
+  }
+  return "还没命名过。今晚的「夜间综合 N2」就把它写下来。";
+});
+
 function openArticleReader() {
-  uni.navigateTo({
-    url: "/pages/article-reader/index",
-  });
+  uni.navigateTo({ url: "/pages/article-reader/index" });
 }
 
 function openPathEditor() {
-  uni.navigateTo({
-    url: "/pages/path-editor/index",
-  });
+  uni.navigateTo({ url: "/pages/path-editor/index" });
 }
 
 onShow(() => {
   store.initialize();
-  if (!ensureOnboardingReady(store.state.data.onboardingCompleted)) {
-    return;
-  }
 });
 </script>
 
@@ -177,36 +188,65 @@ onShow(() => {
 }
 
 .path-hero__title {
-  font-size: 48rpx;
+  font-size: 44rpx;
+}
+
+.path-week {
+  color: #71717a;
+  font-size: 22rpx;
 }
 
 .path-quest__title,
 .path-card__title {
-  font-size: 34rpx;
+  font-size: 32rpx;
 }
 
 .path-splits {
   padding: 4rpx 0;
 }
 
-.path-splits__divider {
-  width: 100%;
-  height: 1px;
-  background: rgba(39, 39, 42, 0.88);
-}
-
-.path-splits__meta-label {
-  color: #71717a;
-  font-size: 20rpx;
-  letter-spacing: 4rpx;
-  text-transform: uppercase;
-}
-
 .path-card__warning {
   color: #d4d4d8;
-  font-size: 28rpx;
+  font-size: 26rpx;
   line-height: 1.7;
   font-style: italic;
+}
+
+.path-narrative {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 14rpx;
+  background: rgba(10, 10, 11, 0.34);
+}
+.path-narrative__line {
+  color: #d4d4d8;
+  font-size: 24rpx;
+  line-height: 1.65;
+}
+.path-narrative__tag {
+  color: #34d399;
+  font-weight: 600;
+  margin-right: 8rpx;
+}
+
+.path-constraints {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.path-constraint {
+  padding: 14rpx 18rpx;
+  border-radius: 14rpx;
+  background: rgba(10, 10, 11, 0.34);
+}
+
+.path-constraint__text {
+  color: #d4d4d8;
+  font-size: 26rpx;
+  line-height: 1.6;
 }
 
 .path-article-row {
@@ -231,5 +271,3 @@ onShow(() => {
   line-height: 1;
 }
 </style>
-
-
