@@ -77,6 +77,7 @@ const DEFAULT_MORNING_EXCAVATION: MorningExcavation = {
 const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   desktopNotification: true,
   sound: true,
+  soundVolume: 70,
   focusWindow: true,
   inAppBanner: true,
 };
@@ -132,6 +133,7 @@ function createDailySnapshot(dateKey: string): DailySnapshot {
     alignmentScore: 0,
     reminderActions: [],
     dayPromptResponses: [],
+    notifiedReminderIds: [],
     lastUpdatedAt: nowIso(),
   };
 }
@@ -349,8 +351,10 @@ function ensureDay(dateKey: string = internalState.activeDateKey): {
 
   if (!internalState.data.dailySnapshots[dateKey]) {
     internalState.data.dailySnapshots[dateKey] = createDailySnapshot(dateKey);
-  } else if (!internalState.data.dailySnapshots[dateKey].dayPromptResponses) {
-    internalState.data.dailySnapshots[dateKey].dayPromptResponses = [];
+  } else {
+    const snap = internalState.data.dailySnapshots[dateKey];
+    if (!snap.dayPromptResponses) snap.dayPromptResponses = [];
+    if (!snap.notifiedReminderIds) snap.notifiedReminderIds = [];
   }
 
   return {
@@ -755,6 +759,24 @@ function answerDayPrompt(promptKey: string, answer: string): void {
   appendLog("day-prompt-answered", `回答 ${promptKey}`, answer.slice(0, 60), promptKey);
   recalculateAlignment(dateKey);
   persist();
+}
+
+/**
+ * 记录某条提醒已经被推送过。scheduler 用它防止重启后重复推送。
+ * 如果已经在列表里,直接返回 false(给调用方提示「不需要再推一次」)。
+ */
+function markReminderNotified(ruleId: string, dateKey: string = internalState.activeDateKey): boolean {
+  const snapshot = ensureDay(dateKey).snapshot;
+  if (snapshot.notifiedReminderIds.includes(ruleId)) return false;
+  snapshot.notifiedReminderIds.push(ruleId);
+  snapshot.lastUpdatedAt = nowIso();
+  persist();
+  return true;
+}
+
+function hasReminderBeenNotified(ruleId: string, dateKey: string = internalState.activeDateKey): boolean {
+  const snap = internalState.data.dailySnapshots[dateKey];
+  return Boolean(snap?.notifiedReminderIds?.includes(ruleId));
 }
 
 // —— Morning Excavation ——
@@ -1208,6 +1230,8 @@ export function useAppStore() {
     removeReminderRule,
     resolveReminder,
     answerDayPrompt,
+    markReminderNotified,
+    hasReminderBeenNotified,
     saveNightSynthesis,
     getNightSynthesis,
     promoteTomorrowBlocks,

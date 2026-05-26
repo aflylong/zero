@@ -1,7 +1,7 @@
 {
   "name": "guiling",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "归零 RE:ZERO — 用一天,重启你的人生。Monorepo containing a shared core, a desktop Tauri app, and a WeChat mini-program.",
   "scripts": {
     "dev:desktop": "pnpm --filter @guiling/desktop dev",

@@ -233,6 +233,8 @@ export interface DailySnapshot {
   reminderActions: ReminderActionRecord[];
   /** 当天对各时间点 prompt 的回答(同一 key 后写覆盖前) */
   dayPromptResponses: DayPromptResponse[];
+  /** 当天已经推送过桌面通知的 reminderRule.id 列表(持久化,避免重启后重复推送) */
+  notifiedReminderIds: string[];
   lastUpdatedAt: string;
 }
 
@@ -306,6 +308,8 @@ export interface NotificationPreferences {
   desktopNotification: boolean;
   /** 提醒到达时播放一声短促铃声 */
   sound: boolean;
+  /** 铃声音量 0-100;0 = 几乎听不见,100 = 最大;sound 关闭时不生效 */
+  soundVolume: number;
   /** 把窗口拉到前台抢焦点 */
   focusWindow: boolean;
   /** 在窗口内弹出一个全局浮层(应用未在前台时静默,在前台时强提示) */

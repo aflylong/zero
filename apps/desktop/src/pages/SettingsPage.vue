@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="settings-page">
     <PageHeader
       title="设置"
@@ -73,7 +73,7 @@
                 :stroke-width="iconStroke"
               />
               <span class="settings-toggle__name">铃声</span>
-              <span class="settings-toggle__desc">响起时同步播一声温和的双音「叮 — 叮」。</span>
+              <span class="settings-toggle__desc">响起时同步播一段更明显的「叮 — 咚 — 叮」。</span>
             </button>
 
             <button
@@ -104,6 +104,39 @@
               />
               <span class="settings-toggle__name">应用内浮层</span>
               <span class="settings-toggle__desc">应用在前台时,从右上角滑入一个强提示。</span>
+            </button>
+          </div>
+
+          <div class="settings-volume" :class="{ 'settings-volume--muted': !prefs.sound }">
+            <div class="settings-volume__head">
+              <span class="settings-volume__label">铃声音量</span>
+              <span class="settings-volume__value">{{ prefs.soundVolume }}%</span>
+            </div>
+            <input
+              type="range"
+              class="settings-volume__slider"
+              min="0"
+              max="100"
+              step="5"
+              :disabled="!prefs.sound"
+              :value="prefs.soundVolume"
+              @input="onVolumeInput($event)"
+            />
+            <div class="settings-volume__marks">
+              <span>静</span>
+              <span>30</span>
+              <span>50</span>
+              <span>70</span>
+              <span>100</span>
+            </div>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm settings-volume__preview"
+              :disabled="!prefs.sound"
+              @click="previewSoundOnly"
+            >
+              <Volume2 :size="14" :stroke-width="iconStroke" />
+              <span>试听一次</span>
             </button>
           </div>
 
@@ -170,7 +203,7 @@
             <div class="settings-about__copy">
               <p class="settings-about__title">归零 · RE:ZERO</p>
               <p class="muted-text">用一天,重启你的人生。</p>
-              <p class="faint-text">版本 0.2.0 · Tauri 2 · 数据存在本地</p>
+              <p class="faint-text">版本 0.2.3 · Tauri 2 · 数据存在本地</p>
             </div>
           </div>
           <div class="action-row">
@@ -251,15 +284,30 @@ async function testNotification() {
     await adapter.notify({
       id: `test-${Date.now()}`,
       title: "测试提醒 · 这就是真实推送的样子",
-      body: "如果你听到「叮 — 叮」,说明铃声开关是打开的。\n窗口被拉到前台,说明抢前台是打开的。",
+      body: "如果你听到「叮 — 咚 — 叮」三声,说明铃声开关是打开的。\n窗口被拉到前台,说明抢前台是打开的。",
       sound: prefs.value.sound,
+      soundVolume: prefs.value.soundVolume,
       focusWindow: prefs.value.focusWindow,
     });
   } else {
-    if (prefs.value.sound) await adapter.playSound?.();
+    if (prefs.value.sound) await adapter.playSound?.(prefs.value.soundVolume);
     if (prefs.value.focusWindow) await adapter.focusWindow?.();
   }
   flash("已触发一次测试提醒。", "ok");
+}
+
+async function previewSoundOnly() {
+  const adapter = getNotificationAdapter();
+  await adapter.playSound?.(prefs.value.soundVolume);
+}
+
+function setSoundVolume(value: number) {
+  store.updateNotificationPreferences({ soundVolume: Math.max(0, Math.min(100, Math.round(value))) });
+}
+
+function onVolumeInput(e: Event) {
+  const v = Number((e.target as HTMLInputElement).value);
+  if (Number.isFinite(v)) setSoundVolume(v);
 }
 
 onMounted(async () => {
@@ -500,5 +548,58 @@ function openPrivacy() {
   font-size: var(--si-font-xs);
   line-height: 1.55;
   color: var(--si-color-text-faint);
+}
+
+.settings-volume {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--si-color-border-subtle);
+  border-radius: var(--si-radius-md);
+  background: var(--si-color-surface-card-soft);
+}
+
+.settings-volume--muted {
+  opacity: 0.5;
+}
+
+.settings-volume__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.settings-volume__label {
+  color: var(--si-color-text-soft);
+  font-size: var(--si-font-sm);
+  font-weight: var(--si-weight-medium);
+}
+
+.settings-volume__value {
+  color: var(--si-color-brand-text);
+  font-size: var(--si-font-md);
+  font-weight: var(--si-weight-semibold);
+}
+
+.settings-volume__slider {
+  width: 100%;
+  accent-color: var(--si-color-brand);
+  cursor: pointer;
+}
+
+.settings-volume__slider:disabled {
+  cursor: not-allowed;
+}
+
+.settings-volume__marks {
+  display: flex;
+  justify-content: space-between;
+  color: var(--si-color-text-faint);
+  font-size: var(--si-font-xs);
+}
+
+.settings-volume__preview {
+  align-self: flex-start;
 }
 </style>

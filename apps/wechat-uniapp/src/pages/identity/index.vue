@@ -106,7 +106,7 @@
         <button class="identity-footer__link" @tap="openPrivacy">
           关于 · 隐私政策
         </button>
-        <text class="identity-footer__version">v0.2.0 · 数据存在你本机</text>
+        <text class="identity-footer__version">v0.2.1 · 数据存在你本机</text>
       </view>
     </view>
   </PageShell>

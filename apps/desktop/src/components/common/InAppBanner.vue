@@ -107,7 +107,7 @@ watch(
     // 应用在前台时再响一声(响铃由 OS 通知端控制时是双响,这里只在"banner 切换"瞬间补一声)
     if (prefs.value.sound && document.visibilityState === "visible") {
       try {
-        await getNotificationAdapter().playSound?.();
+        await getNotificationAdapter().playSound?.(prefs.value.soundVolume);
       } catch {
         /* ignore */
       }

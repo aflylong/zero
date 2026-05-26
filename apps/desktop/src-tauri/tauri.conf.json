@@ -1,6 +1,6 @@
 {
   "productName": "归零",
-  "version": "0.2.0",
+  "version": "0.2.3",
   "identifier": "app.guiling.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -27,12 +27,6 @@
     ],
     "security": {
       "csp": null
-    },
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "tooltip": "归零 RE:ZERO",
-      "menuOnLeftClick": false
     }
   },
   "bundle": {

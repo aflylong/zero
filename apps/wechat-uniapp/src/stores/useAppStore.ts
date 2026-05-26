@@ -77,6 +77,7 @@ const DEFAULT_MORNING_EXCAVATION: MorningExcavation = {
 const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   desktopNotification: false,
   sound: true,
+  soundVolume: 70,
   focusWindow: false,
   inAppBanner: true,
 };
@@ -132,6 +133,7 @@ function createDailySnapshot(dateKey: string): DailySnapshot {
     alignmentScore: 0,
     reminderActions: [],
     dayPromptResponses: [],
+    notifiedReminderIds: [],
     lastUpdatedAt: nowIso(),
   };
 }
@@ -322,8 +324,10 @@ function ensureDay(dateKey = internalState.activeDateKey) {
   }
   if (!internalState.data.dailySnapshots[dateKey]) {
     internalState.data.dailySnapshots[dateKey] = createDailySnapshot(dateKey);
-  } else if (!internalState.data.dailySnapshots[dateKey].dayPromptResponses) {
-    internalState.data.dailySnapshots[dateKey].dayPromptResponses = [];
+  } else {
+    const snap = internalState.data.dailySnapshots[dateKey];
+    if (!snap.dayPromptResponses) snap.dayPromptResponses = [];
+    if (!snap.notifiedReminderIds) snap.notifiedReminderIds = [];
   }
   return {
     plan: internalState.data.dailyPlans[dateKey],
@@ -715,6 +719,20 @@ function answerDayPrompt(promptKey: string, answer: string) {
   appendLog("day-prompt-answered", `回答 ${promptKey}`, answer.slice(0, 60), promptKey);
   recalculateAlignment(dateKey);
   persist();
+}
+
+function markReminderNotified(ruleId: string, dateKey = internalState.activeDateKey): boolean {
+  const snapshot = ensureDay(dateKey).snapshot;
+  if (snapshot.notifiedReminderIds.includes(ruleId)) return false;
+  snapshot.notifiedReminderIds.push(ruleId);
+  snapshot.lastUpdatedAt = nowIso();
+  persist();
+  return true;
+}
+
+function hasReminderBeenNotified(ruleId: string, dateKey = internalState.activeDateKey): boolean {
+  const snap = internalState.data.dailySnapshots[dateKey];
+  return Boolean(snap?.notifiedReminderIds?.includes(ruleId));
 }
 
 // —— Morning Excavation ——
@@ -1137,6 +1155,8 @@ export function useAppStore() {
     removeReminderRule,
     resolveReminder,
     answerDayPrompt,
+    markReminderNotified,
+    hasReminderBeenNotified,
     saveNightSynthesis,
     getNightSynthesis,
     promoteTomorrowBlocks,

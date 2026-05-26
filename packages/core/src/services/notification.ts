@@ -14,6 +14,8 @@ export interface NotificationPayload {
   scheduledAt?: string | null;
   /** 是否同时播放一声短促铃声 */
   sound?: boolean;
+  /** 铃声音量 0-100;不传按 70 处理 */
+  soundVolume?: number;
   /** 是否把窗口拉到前台抢焦点 */
   focusWindow?: boolean;
 }
@@ -25,8 +27,8 @@ export interface NotificationAdapter {
   requestPermission?(): Promise<boolean>;
   /** Whether OS-level notifications are currently available. */
   isAvailable?(): Promise<boolean> | boolean;
-  /** 播放一声短铃声(独立暴露,UI 内部 banner 也可调用) */
-  playSound?(): Promise<void> | void;
+  /** 播放一声短铃声(独立暴露,UI 内部 banner 也可调用);volume 0-100,不传按 70。 */
+  playSound?(volume?: number): Promise<void> | void;
   /** 把应用窗口拉到前台并抢焦点 */
   focusWindow?(): Promise<void> | void;
 }

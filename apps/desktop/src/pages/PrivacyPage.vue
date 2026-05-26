@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="privacy-page">
     <PageHeader
       title="隐私政策"
@@ -81,7 +81,7 @@
           <p class="body-text">
             如果未来本应用接入新的能力(例如云同步、第三方服务),我们会在更新此政策的同时,在应用内明确告知,并在你授权后才启用相关功能。
           </p>
-          <p class="faint-text">版本 0.2.0 · 数据存在你本机</p>
+          <p class="faint-text">版本 0.2.3 · 数据存在你本机</p>
         </GlassCard>
       </div>
     </PageBody>

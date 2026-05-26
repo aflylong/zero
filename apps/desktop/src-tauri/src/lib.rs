@@ -8,6 +8,17 @@ use tauri_plugin_autostart::MacosLauncher;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Single-instance must be installed FIRST so that the second launch
+        // is intercepted before any heavy initialization happens.
+        // 第二次双击启动时,这个回调会在主进程被调用、新进程会立刻退出。
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            // 把已经在跑的窗口拉到前台、抢焦点。
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.unminimize();
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())

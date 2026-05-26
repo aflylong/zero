@@ -2,8 +2,8 @@
     "name" : "归零",
     "appid" : "",
     "description" : "用一天,重启你的人生。",
-    "versionName" : "0.2.0",
-    "versionCode" : "200",
+    "versionName" : "0.2.1",
+    "versionCode" : "201",
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {

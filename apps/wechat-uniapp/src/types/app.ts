@@ -173,6 +173,8 @@ export interface DailySnapshot {
   alignmentScore: number;
   reminderActions: ReminderActionRecord[];
   dayPromptResponses: DayPromptResponse[];
+  /** 当天已经推送过桌面通知的 reminderRule.id 列表(持久化,避免重启后重复推送) */
+  notifiedReminderIds: string[];
   lastUpdatedAt: string;
 }
 
@@ -242,6 +244,8 @@ export interface RecordDetail {
 export interface NotificationPreferences {
   desktopNotification: boolean;
   sound: boolean;
+  /** 铃声音量 0-100 */
+  soundVolume: number;
   focusWindow: boolean;
   inAppBanner: boolean;
 }

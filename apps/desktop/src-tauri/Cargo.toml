@@ -1,6 +1,6 @@
 [package]
 name = "guiling-desktop"
-version = "0.2.0"
+version = "0.2.3"
 description = "归零 RE:ZERO — desktop app"
 authors = ["GuiLing Team"]
 edition = "2021"
@@ -19,6 +19,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
