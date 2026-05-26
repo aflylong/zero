@@ -1,8 +1,8 @@
 <template>
   <div class="journey-night">
     <PageHeader
-      title="夜间综合"
-      kicker="JOURNEY · 综合洞见"
+      title="晚上回顾"
+      kicker="JOURNEY · 晚上回顾"
       :description="description"
       back
       back-to="/today"
@@ -23,11 +23,11 @@
     <PageBody>
       <div class="journey-night__frame">
         <GlassCard variant="hero">
-          <SectionLabel :icon="Moon">第 3 部分 · 综合洞见</SectionLabel>
+          <SectionLabel :icon="Moon">第 3 部分 · 晚上回顾</SectionLabel>
           <p class="body-text">
             把今天的洞见说清楚、内化进自我,据此明天就行动。
-            原文要求 5 步,顺序很重要——先说"为什么卡住",再"命名敌人",
-            然后压缩成两句话,最后定三个透镜。
+            原文要求 5 步,顺序很重要——先说"为什么卡住",再"看清是什么挡住了你",
+            然后压缩成两句话,最后定下三个维度。
           </p>
           <p class="muted-text">
             这套字段保存时,N3 / N4 会自动写回到「道路」页的反愿景与愿景顶部。
@@ -51,9 +51,9 @@
 
         <!-- N2 -->
         <GlassCard>
-          <SectionLabel :icon="Crosshair">N2 · 命名敌人</SectionLabel>
+          <SectionLabel :icon="Crosshair">N2 · 看清是什么挡住了你</SectionLabel>
           <p class="muted-text">
-            真正的敌人是什么?把它清楚命名。<strong>不是环境,不是别人</strong>,而是那个一直在掌控局面的内在模式或信念。
+            真正挡在前面的是什么?把它清楚说出来。<strong>不是环境,不是别人</strong>,而是那个一直在掌控局面的内在模式或信念。
           </p>
           <input
             v-model="form.enemyName"
@@ -81,9 +81,9 @@
 
         <!-- N4 -->
         <GlassCard>
-          <SectionLabel :icon="Compass">N4 · 一句话愿景 MVP</SectionLabel>
+          <SectionLabel :icon="Compass">N4 · 一句话「想去到的样子(最小版)」</SectionLabel>
           <p class="muted-text">
-            写一句话,概括你正在朝什么方向建造(并且你知道它会演化)。这是你的愿景 MVP。
+            写一句话,概括你正在朝什么方向建造(并且你知道它会演化)。这是你的最小愿景版。
           </p>
           <input
             v-model="form.visionMantra"
@@ -96,13 +96,13 @@
 
         <!-- N5 -->
         <GlassCard>
-          <SectionLabel :icon="Telescope">N5 · 创建三透镜</SectionLabel>
+          <SectionLabel :icon="Telescope">N5 · 三维度</SectionLabel>
           <p class="muted-text">
-            目标不是为了「成就」,目标是一种透镜。换上对的透镜,你就会看到该看到的信息。
+            目标不是为了「成就」,目标更像一副眼镜。换上对的那副,你就会看到该看到的信息。
           </p>
 
           <div class="form-field">
-            <label class="form-label">L1 · 一年透镜</label>
+            <label class="form-label">L1 · 一年方向</label>
             <p class="faint-text">一年后必须有什么变成事实,你才会确信自己打破了旧模式?</p>
             <input
               v-model="form.yearLens"
@@ -114,8 +114,8 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">L2 · 一月透镜</label>
-            <p class="faint-text">一个月后必须有什么变成事实,才能让「一年透镜」依然可能?</p>
+            <label class="form-label">L2 · 这个月重点</label>
+            <p class="faint-text">一个月后必须有什么变成事实,才能让「一年方向」依然可能?</p>
             <input
               v-model="form.monthLens"
               class="form-input"
@@ -126,9 +126,9 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">L3 · 每日透镜 · 明天 2-3 个时间块</label>
+            <label class="form-label">L3 · 今天的行动 · 明天 2-3 个时间段</label>
             <p class="faint-text">
-              这些是「你正在成为的那个人」会理所当然去做的事。保存后会自动出现在明天的"今日杠杆"。
+              这些是「你正在成为的那个人」会理所当然去做的事。保存后会自动出现在明天的「每日动作」。
             </p>
 
             <div class="journey-night__blocks">
@@ -154,7 +154,7 @@
                 <button
                   type="button"
                   class="btn btn-destructive btn-sm btn-icon"
-                  title="删除这个时间块"
+                  title="删除这个时间段"
                   @click="removeBlock(idx)"
                 >
                   <Trash2 :size="14" :stroke-width="iconStroke" />
@@ -168,7 +168,7 @@
                 @click="addBlock"
               >
                 <Plus :size="14" :stroke-width="iconStroke" />
-                <span>添加时间块</span>
+                <span>添加时间段</span>
               </button>
             </div>
           </div>
@@ -275,7 +275,7 @@ watch(dateKey, hydrate, { immediate: true });
 
 const description = computed(() => {
   const d = parseDateKey(dateKey.value);
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 5 步综合`;
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 晚上 5 步`;
 });
 
 function addBlock() {
@@ -316,7 +316,7 @@ function buildSynthesis(): NightSynthesis {
 
 function save() {
   store.saveNightSynthesis(buildSynthesis());
-  // 升格 tomorrow blocks
+  // 把明天要做的事加进「每日动作」
   store.promoteTomorrowBlocks(dateKey.value);
   dirty.value = false;
   router.push("/today");

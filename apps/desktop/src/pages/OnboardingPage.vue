@@ -80,7 +80,7 @@
 
         <template v-else-if="currentStep === 2">
           <GlassCard>
-            <SectionLabel :icon="Target">一年目标 · 主线任务</SectionLabel>
+            <SectionLabel :icon="Target">一年方向</SectionLabel>
             <p class="muted-text">一年后必须看到什么变化,才算真的打破了旧模式?</p>
             <div class="form-field">
               <label class="form-label">标题</label>
@@ -102,7 +102,7 @@
             </div>
           </GlassCard>
           <GlassCard>
-            <SectionLabel :icon="Swords">一月项目 · Boss 战</SectionLabel>
+            <SectionLabel :icon="Swords">Boss 战(这个月目标)</SectionLabel>
             <p class="muted-text">这个月要攻克的具体里程碑。要服务于一年目标。</p>
             <div class="form-field">
               <label class="form-label">标题</label>
@@ -160,7 +160,7 @@
             </div>
             <div class="reminder-pair__item">
               <div class="reminder-pair__copy">
-                <span class="form-label">夜间综合</span>
+                <span class="form-label">晚上回顾</span>
                 <span class="muted-text">把今天压成明天的方向。</span>
               </div>
               <input
@@ -234,7 +234,7 @@ const headerDesc =
 const steps = [
   { short: "方向", kicker: "STEP 1 · 方向", title: "先把方向定住:你要去哪,你不要回到哪。", description: "这一步只定方向。" },
   { short: "身份", kicker: "STEP 2 · 身份", title: "用一句话决定你今天起按什么身份行动。", description: "身份句拉齐行为,反身份阻止你退回旧版本。" },
-  { short: "目标", kicker: "STEP 3 · 目标层级", title: "把一年目标和这个月的项目说清楚。", description: "原文里这叫主线任务和 Boss 战。" },
+  { short: "目标", kicker: "STEP 3 · 目标层级", title: "把一年方向和这个月要拿下的事说清楚。", description: "一年定方向,一月定具体里程碑。" },
   { short: "启动", kicker: "STEP 4 · 启动", title: "设一条今天的动作和提醒时间。", description: "9 条白天提醒会自动种好。" },
 ] as const;
 
@@ -354,8 +354,8 @@ function buildAllReminders(): ReminderRule[] {
       "night",
       nh,
       nm,
-      "夜间综合",
-      "把今天压成 5 步:卡点 / 命名敌人 / 反愿景 / 愿景 / 三透镜。",
+      "晚上回顾",
+      "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
       "night-synthesis",
     ),
   ];
@@ -366,8 +366,16 @@ function buildAllReminders(): ReminderRule[] {
         buildReminder("day", dp.hour, dp.minute, dp.label, dp.question, dp.key),
       );
     } else if (dp.kind === "commute") {
+      // 通勤题默认时间:W1 早 6:50(出门前)、W2 中午 12:30(午休)、W3 晚 19:00(下班路上)
+      // 用户可以在「提醒设置」里调整或关闭。
+      const defaults: Record<string, [number, number]> = {
+        "w1-commute": [6, 50],
+        "w2-commute": [12, 30],
+        "w3-commute": [19, 0],
+      };
+      const [h, m] = defaults[dp.key] ?? [7, 0];
       reminders.push(
-        buildReminder("commute", 0, 0, dp.label, dp.question, dp.key),
+        buildReminder("commute", h, m, dp.label, dp.question, dp.key),
       );
     }
   }

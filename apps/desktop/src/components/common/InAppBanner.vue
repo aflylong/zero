@@ -154,7 +154,7 @@ function iconForKind(kind: ReminderKind) {
 }
 function kindLabel(kind: ReminderKind): string {
   if (kind === "morning") return "早晨开掘";
-  if (kind === "night") return "夜间综合";
+  if (kind === "night") return "晚上回顾";
   if (kind === "commute") return "通勤反思";
   return "白天打断";
 }

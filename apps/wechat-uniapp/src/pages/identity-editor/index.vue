@@ -7,7 +7,7 @@
     <view class="editor-page">
       <view class="editor-hero">
         <SectionLabel>定义与证据</SectionLabel>
-        <text class="editor-hero__title">把身份句、原则和每日杠杆整理清楚。</text>
+        <text class="editor-hero__title">把身份句、原则和每日动作整理清楚。</text>
         <text class="muted-text">实时保存。改完直接回去就行。</text>
       </view>
 
@@ -63,8 +63,8 @@
 
       <GlassCard card-class="editor-card">
         <view class="field-row">
-          <text class="field-label">每日杠杆</text>
-          <button class="ghost-button" @tap="store.createProofRule()">新增杠杆</button>
+          <text class="field-label">每日动作</text>
+          <button class="ghost-button" @tap="store.createProofRule()">新增动作</button>
         </view>
         <view class="rule-list">
           <view

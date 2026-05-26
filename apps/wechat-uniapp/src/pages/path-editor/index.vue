@@ -6,7 +6,7 @@
   >
     <view class="editor-page">
       <view class="editor-hero">
-        <SectionLabel>方向与主线</SectionLabel>
+        <SectionLabel>方向与一年</SectionLabel>
         <text class="editor-hero__title">把愿景、反愿景三段叙事和目标层级整理清楚。</text>
         <text class="muted-text">实时保存。改完直接回去就行。</text>
       </view>
@@ -105,7 +105,7 @@
       <GlassCard card-class="editor-card">
         <view class="editor-fields">
           <view class="field-block">
-            <text class="field-label">一年目标 · 主线任务</text>
+            <text class="field-label">一年方向</text>
             <text class="muted-text">一年后必须看到什么变化,才算真的打破了旧模式?</text>
             <input
               :value="yearGoal"
@@ -132,7 +132,7 @@
           </view>
 
           <view class="field-block">
-            <text class="field-label">一月项目 · Boss 战</text>
+            <text class="field-label">Boss 战(这个月目标)</text>
             <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
             <input
               :value="monthProject"

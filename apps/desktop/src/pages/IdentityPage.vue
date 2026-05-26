@@ -92,7 +92,7 @@
         <aside class="identity-col identity-col--side">
           <GlassCard>
             <div class="identity-section__head">
-              <SectionLabel :icon="CheckCircle2">每日杠杆</SectionLabel>
+              <SectionLabel :icon="CheckCircle2">每日动作</SectionLabel>
               <button type="button" class="btn btn-ghost btn-sm" @click="openEditor">
                 <SlidersHorizontal :size="14" :stroke-width="iconStroke" />
                 <span>管理</span>
@@ -115,16 +115,16 @@
                   v-if="rule.linkedYearGoal || rule.linkedMonthProject"
                   class="identity-rule__link"
                 >
-                  <span v-if="rule.linkedYearGoal" class="tag-chip">主线</span>
-                  <span v-if="rule.linkedMonthProject" class="tag-chip">Boss 战</span>
+                  <span v-if="rule.linkedYearGoal" class="tag-chip">这一年的方向</span>
+                  <span v-if="rule.linkedMonthProject" class="tag-chip">Boss 战(这个月目标)</span>
                 </span>
               </div>
             </div>
             <EmptyState
               v-else
               :icon="ListChecks"
-              title="还没有生效的杠杆"
-              description="去编辑页加一条今天就能做到的真实动作。"
+              title="还没有每日动作"
+              description="去编辑页加一条今天就能做到的小事。"
             />
           </GlassCard>
         </aside>
@@ -208,8 +208,8 @@ function loopClass(idx: number) {
 }
 
 const ruleSummary = computed(() => {
-  if (!activeRules.value.length) return "还没有可验证的身份动作。";
-  return `当前生效 ${activeRules.value.length} 条杠杆,它们决定你每天怎么证明这句话。`;
+  if (!activeRules.value.length) return "还没写下「每日动作」。";
+  return `当前生效 ${activeRules.value.length} 条每日动作,它们决定你每天怎么证明这句话。`;
 });
 
 function openEditor() {

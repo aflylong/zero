@@ -83,7 +83,7 @@
         </GlassCard>
 
         <GlassCard>
-          <SectionLabel :icon="Target">一年目标 · 主线任务</SectionLabel>
+          <SectionLabel :icon="Target">一年方向</SectionLabel>
           <p class="muted-text">
             一年后必须看到什么变化,才算真的打破了旧模式?这是这一年里唯一的优先事项。
           </p>
@@ -119,7 +119,7 @@
         </GlassCard>
 
         <GlassCard>
-          <SectionLabel :icon="Swords">一月项目 · Boss 战</SectionLabel>
+          <SectionLabel :icon="Swords">Boss 战(这个月目标)</SectionLabel>
           <p class="muted-text">
             这个月要攻克的具体里程碑。要服务于一年目标。
           </p>

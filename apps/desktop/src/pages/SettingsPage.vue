@@ -203,7 +203,7 @@
             <div class="settings-about__copy">
               <p class="settings-about__title">归零 · RE:ZERO</p>
               <p class="muted-text">用一天,重启你的人生。</p>
-              <p class="faint-text">版本 0.2.3 · Tauri 2 · 数据存在本地</p>
+              <p class="faint-text">版本 0.3.0 · Tauri 2 · 数据存在本地</p>
             </div>
           </div>
           <div class="action-row">

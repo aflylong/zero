@@ -28,8 +28,8 @@
         </text>
         <view class="privacy-list">
           <text class="privacy-list__item">· 你的微信账号、昵称、头像、手机号、地理位置</text>
-          <text class="privacy-list__item">· 你写下的愿景、反愿景、身份、目标、每日杠杆</text>
-          <text class="privacy-list__item">· 你回答的开掘题、白天打断作答、夜间综合内容</text>
+          <text class="privacy-list__item">· 你写下的愿景、反愿景、身份、目标、每日动作</text>
+          <text class="privacy-list__item">· 你回答的开掘题、白天打断作答、晚上回顾内容</text>
           <text class="privacy-list__item">· 你的今日观察、复盘、目标历史、动作日志</text>
         </view>
       </GlassCard>

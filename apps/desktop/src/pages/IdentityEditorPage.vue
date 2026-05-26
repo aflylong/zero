@@ -75,10 +75,10 @@
 
         <GlassCard>
           <div class="identity-editor__head">
-            <SectionLabel :icon="CheckCircle2">每日杠杆</SectionLabel>
+            <SectionLabel :icon="CheckCircle2">每日动作</SectionLabel>
             <button type="button" class="btn btn-ghost btn-sm" @click="store.createProofRule()">
               <Plus :size="14" :stroke-width="iconStroke" />
-              <span>新增杠杆</span>
+              <span>新增动作</span>
             </button>
           </div>
 
@@ -132,7 +132,7 @@
                     :checked="rule.linkedYearGoal ?? false"
                     @change="toggleLinkYear(rule, $event)"
                   />
-                  <span>关联一年目标(主线)</span>
+                  <span>关联一年方向</span>
                 </label>
                 <label class="identity-editor__rule-link">
                   <input
@@ -140,7 +140,7 @@
                     :checked="rule.linkedMonthProject ?? false"
                     @change="toggleLinkMonth(rule, $event)"
                   />
-                  <span>关联一月项目(Boss 战)</span>
+                  <span>关联 Boss 战(这个月目标)</span>
                 </label>
               </div>
 
@@ -182,7 +182,7 @@
           <EmptyState
             v-else
             :icon="ListChecks"
-            title="还没有每日杠杆"
+            title="还没有每日动作"
             description="一条可验证的动作,比十句口号更有用。"
           />
         </GlassCard>

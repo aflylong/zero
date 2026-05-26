@@ -9,7 +9,7 @@
         <SectionLabel>9 时间点 + 早晚锚点</SectionLabel>
         <text class="reminder-hero__title">决定系统什么时候把你拉回正轨。</text>
         <text class="muted-text">
-          按原文 9 时间点(D1-D6 + W1-W3) + 早晨开掘锚点 + 夜间综合锚点管理。关掉的提醒不会推送通知。
+          按原文 9 时间点(D1-D6 + W1-W3) + 早晨开掘锚点 + 晚上回顾入口管理。关掉的提醒不会推送通知。
         </text>
         <view class="reminder-hero__actions">
           <button class="ghost-button" @tap="seedDefaults">恢复默认 9 时间点</button>
@@ -60,8 +60,8 @@
               </view>
             </view>
 
-            <view class="reminder-card__body">
-              <view v-if="rule.kind !== 'commute'" class="reminder-card__time-row">
+              <view class="reminder-card__body">
+                <view class="reminder-card__time-row">
                 <text class="field-label">提醒时间</text>
                 <picker
                   mode="time"
@@ -131,11 +131,11 @@ const groupedRules = computed<Group[]>(() => {
     commute: {
       title: "通勤 3 题",
       description:
-        "原文 W1-W3。通勤、散步、发呆时想这三条;不参与时间触发,只在「白天 9 题」里随时打开。",
+        "原文 W1-W3。通勤、散步、发呆时想这三条。默认时间:早 6:50 / 中午 12:30 / 晚 19:00,可调。",
     },
     night: {
-      title: "夜间综合锚点",
-      description: "原文 Part 3 入口提醒。响起时进入 5 步综合。",
+      title: "晚上回顾入口",
+      description: "原文 Part 3 入口提醒。响起时进入 5 步回顾。",
     },
   };
 
@@ -192,12 +192,21 @@ function seedDefaults() {
   );
   for (const dp of dayPrompts) {
     if (have.has(dp.key)) continue;
+    const commuteDefaults: Record<string, [number, number]> = {
+      "w1-commute": [6, 50],
+      "w2-commute": [12, 30],
+      "w3-commute": [19, 0],
+    };
+    const [h, m] =
+      dp.kind === "commute"
+        ? commuteDefaults[dp.key] ?? [7, 0]
+        : [dp.hour ?? 0, dp.minute ?? 0];
     store.createReminderRule({
       kind: dp.kind === "day" ? "day" : "commute",
       promptKey: dp.key,
       label: dp.label,
-      hour: dp.hour ?? 0,
-      minute: dp.minute ?? 0,
+      hour: h,
+      minute: m,
       message: dp.question,
     });
   }
@@ -215,10 +224,10 @@ function seedDefaults() {
     store.createReminderRule({
       kind: "night",
       promptKey: "night-synthesis",
-      label: "夜间综合",
+      label: "晚上回顾",
       hour: 21,
       minute: 30,
-      message: "把今天压成 5 步:卡点 / 命名敌人 / 反愿景 / 愿景 / 三透镜。",
+      message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
     });
   }
   uni.showToast({ title: "已补全默认", icon: "success" });

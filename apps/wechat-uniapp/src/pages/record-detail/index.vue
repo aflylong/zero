@@ -30,14 +30,14 @@
           </view>
           <view class="record-detail-hero__fact">
             <text class="record-detail-hero__fact-value">{{ detail.hasNightReview ? "已写" : "未写" }}</text>
-            <text class="record-detail-hero__fact-label">夜间综合</text>
+            <text class="record-detail-hero__fact-label">晚上回顾</text>
           </view>
         </view>
       </view>
 
       <view v-if="hasAnyData" class="record-detail-stack">
         <GlassCard card-class="record-detail-card">
-          <SectionLabel>当天主线</SectionLabel>
+          <SectionLabel>当天的方向</SectionLabel>
           <text class="record-detail-card__title">{{ detail.yearGoalTitle || "尚未定义" }}</text>
           <text class="body-text">{{ detail.yearGoalDescription }}</text>
           <text class="record-detail-card__meta">对齐身份:{{ detail.focusTheme || "尚未定义" }}</text>
@@ -94,14 +94,14 @@
         </GlassCard>
 
         <GlassCard v-if="detail.synthesis" card-class="record-detail-card">
-          <SectionLabel>夜间综合(N1-N5)</SectionLabel>
+          <SectionLabel>晚上回顾(N1-N5)</SectionLabel>
           <view class="record-detail-review">
             <view class="record-detail-review__block">
               <text class="record-detail-review__label">N1 卡住的真正原因</text>
               <text class="body-text">{{ detail.synthesis.stuckReason || "未填写" }}</text>
             </view>
             <view class="record-detail-review__block">
-              <text class="record-detail-review__label">N2 命名敌人</text>
+              <text class="record-detail-review__label">N2 看清是什么挡住了你</text>
               <text class="body-text">{{ detail.synthesis.enemyName || "未填写" }}</text>
             </view>
             <view class="record-detail-review__block">
@@ -109,14 +109,14 @@
               <text class="body-text">{{ detail.synthesis.antiVisionMantra || "未填写" }}</text>
             </view>
             <view class="record-detail-review__block">
-              <text class="record-detail-review__label">N4 愿景 MVP</text>
+              <text class="record-detail-review__label">N4 想去到的样子(最小版)</text>
               <text class="body-text">{{ detail.synthesis.visionMantra || "未填写" }}</text>
             </view>
             <view class="record-detail-review__block">
-              <text class="record-detail-review__label">N5 三透镜</text>
+              <text class="record-detail-review__label">N5 三维度</text>
               <text class="body-text">一年:{{ detail.synthesis.yearLens || "—" }}</text>
               <text class="body-text">一月:{{ detail.synthesis.monthLens || "—" }}</text>
-              <text v-if="detail.synthesis.tomorrowBlocks.length" class="body-text">明日时间块:</text>
+              <text v-if="detail.synthesis.tomorrowBlocks.length" class="body-text">明天的几个时间段:</text>
               <view
                 v-for="b in detail.synthesis.tomorrowBlocks"
                 :key="b.id"
@@ -129,8 +129,8 @@
           </view>
         </GlassCard>
         <GlassCard v-else card-class="record-detail-card">
-          <SectionLabel>夜间综合</SectionLabel>
-          <text class="muted-text">这一天还没写夜间综合。</text>
+          <SectionLabel>晚上回顾</SectionLabel>
+          <text class="muted-text">这一天还没写晚上回顾。</text>
         </GlassCard>
 
         <GlassCard v-if="detail.actionLogs.length" card-class="record-detail-card">
@@ -152,7 +152,7 @@
         <SectionLabel>暂无快照</SectionLabel>
         <text class="record-detail-empty__title">这一天还没有形成完整记录。</text>
         <text class="muted-text">
-          没有证明动作、提醒处理、今日观察或夜间综合时,这里会保持空态。
+          没有证明动作、提醒处理、今日观察或晚上回顾时,这里会保持空态。
         </text>
       </GlassCard>
     </view>

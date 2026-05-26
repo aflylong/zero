@@ -97,9 +97,9 @@ export interface NightSynthesis {
   antiVisionMantra: string;
   /** N4 一句话压缩愿景 MVP */
   visionMantra: string;
-  /** N5.L1 一年透镜 */
+  /** N5.L1 一年方向(对应原文「一年透镜」) */
   yearLens: string;
-  /** N5.L2 一月透镜 */
+  /** N5.L2 这个月重点(对应原文「一月透镜」) */
   monthLens: string;
   /** N5.L3 明天 2-3 个 timeblock 行动 */
   tomorrowBlocks: TomorrowBlock[];
@@ -111,7 +111,7 @@ export interface TomorrowBlock {
   title: string;
   /** 可选时间提示,如 "9:00-10:30" */
   timeHint: string;
-  /** 是否已被推升为下一日的 ProofRule(每日杠杆) */
+  /** 是否已被推升为下一日的 ProofRule(每日动作) */
   promotedToProofRule: boolean;
 }
 
@@ -143,11 +143,11 @@ export interface VisionProfile {
   /** Q14 这周会做的一件事 */
   oneThingThisWeek: string;
 
-  /** 一年目标 — 原文称"主线任务(mission)" */
+  /** 一年目标 — 对应原文「主线任务 / mission」,UI 显示为「一年方向」 */
   yearGoal: string;
   yearGoalDescription: string;
 
-  /** 一月项目 — 原文称"Boss 战" */
+  /** 一月项目 — 对应原文「Boss 战」 */
   monthProject: string;
   monthProjectDescription: string;
   monthProjectDeadline: string | null;
@@ -168,7 +168,7 @@ export interface IdentityProfile {
 }
 
 /**
- * 每日杠杆(原文 K5)。优先级最高、真正"推动指标"的任务。
+ * 每日动作(原文 K5,曾叫「每日杠杆」)。优先级最高、真正"推动指标"的任务。
  * linkedYearGoal/linkedMonthProject 让这条法则与目标层级显式绑定,
  * 形成原文第七章"同心圆"的内层联动。
  */

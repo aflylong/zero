@@ -2,7 +2,7 @@
   <div class="journey-day">
     <PageHeader
       title="白天打断"
-      kicker="JOURNEY · 中断自动驾驶"
+      kicker="JOURNEY · 白天打断"
       :description="description"
       back
       back-to="/today"
@@ -17,7 +17,7 @@
     <PageBody>
       <div class="journey-day__frame">
         <GlassCard variant="hero">
-          <SectionLabel :icon="Sun">第 2 部分 · 中断自动驾驶</SectionLabel>
+          <SectionLabel :icon="Sun">第 2 部分 · 白天打断</SectionLabel>
           <p class="body-text">
             原文要求把这 9 个问题安排成手机里的提醒,一到点就停下来作答。
             提醒越随机、越不和你的日程冲突,越好。
@@ -90,7 +90,7 @@
           </button>
           <button type="button" class="btn btn-primary" @click="goNight">
             <Moon :size="14" :stroke-width="iconStroke" />
-            <span>进入夜间综合</span>
+            <span>进入晚上回顾</span>
           </button>
         </div>
       </div>

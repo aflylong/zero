@@ -103,7 +103,7 @@
               </div>
 
               <div class="reminder-card__body">
-                <div v-if="rule.kind !== 'commute'" class="reminder-card__time-row">
+                <div class="reminder-card__time-row">
                   <span class="form-label">提醒时间</span>
                   <input
                     :value="formatTime(rule.hour, rule.minute)"
@@ -189,11 +189,11 @@ const groupedRules = computed<Group[]>(() => {
     commute: {
       title: "通勤 3 题",
       description:
-        "原文 W1-W3,通勤、散步、发呆时想这三条;不参与时间触发,只在「一天流程」里随时打开。",
+        "原文 W1-W3,通勤、散步、发呆时想这三条。默认时间:早 6:50 / 中午 12:30 / 晚 19:00,可调。",
     },
     night: {
-      title: "夜间综合锚点",
-      description: "原文 Part 3 入口提醒。响起时进入 5 步综合。",
+      title: "晚上回顾入口",
+      description: "原文 Part 3 入口提醒。响起时进入 5 步回顾。",
     },
   };
 
@@ -268,12 +268,22 @@ function seedDefaults() {
   );
   for (const dp of dayPrompts) {
     if (have.has(dp.key)) continue;
+    // commute 默认时间:W1 早 6:50、W2 中午 12:30、W3 晚 19:00
+    const commuteDefaults: Record<string, [number, number]> = {
+      "w1-commute": [6, 50],
+      "w2-commute": [12, 30],
+      "w3-commute": [19, 0],
+    };
+    const [h, m] =
+      dp.kind === "commute"
+        ? commuteDefaults[dp.key] ?? [7, 0]
+        : [dp.hour ?? 0, dp.minute ?? 0];
     store.createReminderRule({
       kind: dp.kind === "day" ? "day" : "commute",
       promptKey: dp.key,
       label: dp.label,
-      hour: dp.hour ?? 0,
-      minute: dp.minute ?? 0,
+      hour: h,
+      minute: m,
       message: dp.question,
     });
   }
@@ -291,10 +301,10 @@ function seedDefaults() {
     store.createReminderRule({
       kind: "night",
       promptKey: "night-synthesis",
-      label: "夜间综合",
+      label: "晚上回顾",
       hour: 21,
       minute: 30,
-      message: "把今天压成 5 步:卡点 / 命名敌人 / 反愿景 / 愿景 / 三透镜。",
+      message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
     });
   }
 }

@@ -29,7 +29,7 @@ const emit = defineEmits<{
 const kindLabel = computed(() => {
   const k = props.prompt?.kind;
   if (k === "morning") return "早晨开掘";
-  if (k === "night") return "夜间综合";
+  if (k === "night") return "晚上回顾";
   if (k === "commute") return "通勤反思";
   return "白天打断";
 });

@@ -228,17 +228,33 @@ function mergeWithDefaults(input?: LegacyAppDataPatch | null): AppData {
   delete visionAny.mainQuestDescription;
   delete visionAny.whyChangeText;
 
-  // reminder rules — 把旧的 wechat-subscribe 改写成 system-notification
+  // reminder rules — 把旧的 wechat-subscribe 改写成 system-notification;
+  // 旧版本里通勤题(commute)hour/minute 都是 0,0.3.0 起改成可触发,这里做一次兜底
+  const COMMUTE_DEFAULTS: Record<string, [number, number]> = {
+    "w1-commute": [6, 50],
+    "w2-commute": [12, 30],
+    "w3-commute": [19, 0],
+  };
   const reminderRules = (input.reminderRules?.length
     ? input.reminderRules
     : base.reminderRules
-  ).map((r) => ({
-    ...r,
-    deliveryMode:
-      (r.deliveryMode as string) === "wechat-subscribe"
-        ? "system-notification"
-        : r.deliveryMode,
-  })) as ReminderRule[];
+  ).map((r) => {
+    const next = {
+      ...r,
+      deliveryMode:
+        (r.deliveryMode as string) === "wechat-subscribe"
+          ? "system-notification"
+          : r.deliveryMode,
+    } as ReminderRule;
+    if (next.kind === "commute" && next.hour === 0 && next.minute === 0 && next.promptKey) {
+      const def = COMMUTE_DEFAULTS[next.promptKey];
+      if (def) {
+        next.hour = def[0];
+        next.minute = def[1];
+      }
+    }
+    return next;
+  }) as ReminderRule[];
 
   // daily plans — 旧版有 mainQuestTitle 字段,运行时映射
   const dailyPlans: Record<string, DailyPlan> = {};
@@ -410,7 +426,7 @@ function getReminderAction(ruleId: string, dateKey: string = internalState.activ
 
 /**
  * "今日推进度" — 0/1-39/40-69/70+ 四档,与 HeatmapGrid 着色保持一致。
- *   50% 来自当日杠杆完成度
+ *   50% 来自当日「每日动作」完成度
  *   30% 来自被处理过的提醒比(complete 或 skip 都算"看见了")
  *   10% 来自今日观察是否留下
  *   10% 来自夜晚综合是否写过
@@ -461,8 +477,8 @@ function refreshReminderPrompts(now: Date = new Date()): void {
       if (rule.snoozedUntil && new Date(rule.snoozedUntil).getTime() > now.getTime()) {
         return false;
       }
-      // commute 类提醒没有时间触发
-      if (rule.kind === "commute") return false;
+      // 所有 reminder 都按 hour/minute 触发(包括 commute);
+      // 用户不想被通勤题打扰可以在「提醒设置」里把它们关掉。
       const dueTime = buildDateTime(dateKey, rule.hour, rule.minute);
       return now.getTime() >= dueTime.getTime();
     })
@@ -627,7 +643,7 @@ function createProofRule(): void {
     Math.max(0, ...internalState.data.proofRules.map((rule) => rule.sortOrder)) + 1;
   upsertProofRule({
     id: createId("rule"),
-    title: "新的每日杠杆",
+    title: "新的每日动作",
     description: "把一句模糊目标改成可验证的动作。",
     cadence: "daily",
     active: true,
@@ -655,7 +671,7 @@ function toggleProofCompletion(ruleId: string): void {
   snapshot.lastUpdatedAt = nowIso();
   appendLog(
     hasRule ? "proof-reset" : "proof-complete",
-    hasRule ? "撤销身份证明" : "完成身份证明",
+    hasRule ? "撤销动作完成" : "完成今日动作",
     undefined,
     ruleId,
   );
@@ -929,7 +945,7 @@ function promoteTomorrowBlocks(dateKey: string = internalState.activeDateKey): n
     upsertProofRule({
       id: createId("rule"),
       title: block.title.trim(),
-      description: block.timeHint.trim() ? `时间块:${block.timeHint.trim()}` : "",
+      description: block.timeHint.trim() ? `时间段:${block.timeHint.trim()}` : "",
       cadence: "daily",
       active: true,
       sortOrder: order,
@@ -947,7 +963,7 @@ function promoteTomorrowBlocks(dateKey: string = internalState.activeDateKey): n
     };
     appendLog(
       "tomorrow-block-promoted",
-      `升格 ${promoted} 个明日时间块为每日杠杆`,
+      `把 ${promoted} 件明天要做的事加进了「每日动作」`,
     );
     persist();
   }

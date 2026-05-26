@@ -33,7 +33,7 @@
       <div v-if="hasAnyData" class="record-detail-grid">
         <section class="record-detail-col record-detail-col--main">
           <GlassCard variant="hero">
-            <SectionLabel :icon="Target">当天主线</SectionLabel>
+            <SectionLabel :icon="Target">当天的方向</SectionLabel>
             <p class="record-detail__title">{{ detail.yearGoalTitle }}</p>
             <p class="body-text">{{ detail.yearGoalDescription }}</p>
             <p class="muted-text">
@@ -110,14 +110,14 @@
           </GlassCard>
 
           <GlassCard v-if="detail.synthesis">
-            <SectionLabel :icon="Telescope">夜间综合(N1-N5)</SectionLabel>
+            <SectionLabel :icon="Telescope">晚上回顾(N1-N5)</SectionLabel>
             <div class="record-detail-review">
               <div class="record-detail-review__block">
                 <span class="record-detail-review__label">N1 卡住的真正原因</span>
                 <p class="body-text">{{ detail.synthesis.stuckReason || "未填写" }}</p>
               </div>
               <div class="record-detail-review__block">
-                <span class="record-detail-review__label">N2 命名敌人</span>
+                <span class="record-detail-review__label">N2 看清是什么挡住了你</span>
                 <p class="body-text">{{ detail.synthesis.enemyName || "未填写" }}</p>
               </div>
               <div class="record-detail-review__block">
@@ -125,18 +125,18 @@
                 <p class="body-text">{{ detail.synthesis.antiVisionMantra || "未填写" }}</p>
               </div>
               <div class="record-detail-review__block">
-                <span class="record-detail-review__label">N4 愿景 MVP</span>
+                <span class="record-detail-review__label">N4 想去到的样子(最小版)</span>
                 <p class="body-text">{{ detail.synthesis.visionMantra || "未填写" }}</p>
               </div>
               <div class="record-detail-review__block">
-                <span class="record-detail-review__label">N5 三透镜</span>
+                <span class="record-detail-review__label">N5 三维度</span>
                 <p class="body-text">一年:{{ detail.synthesis.yearLens || "—" }}</p>
                 <p class="body-text">一月:{{ detail.synthesis.monthLens || "—" }}</p>
                 <p
                   v-if="detail.synthesis.tomorrowBlocks.length"
                   class="body-text"
                 >
-                  明日时间块:
+                  明天的几个时间段:
                 </p>
                 <ul class="record-detail-blocks">
                   <li
@@ -151,8 +151,8 @@
           </GlassCard>
 
           <GlassCard v-if="!detail.synthesis">
-            <SectionLabel :icon="Moon">夜间综合</SectionLabel>
-            <EmptyState :icon="Moon" title="这一天还没写夜间综合" />
+            <SectionLabel :icon="Moon">晚上回顾</SectionLabel>
+            <EmptyState :icon="Moon" title="这一天还没写晚上回顾" />
           </GlassCard>
 
           <GlassCard v-if="detail.actionLogs.length">

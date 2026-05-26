@@ -26,7 +26,7 @@
         <text class="muted-text">不再回去:{{ antiIdentityPreview }}</text>
         <view class="identity-hero__actions">
           <button class="pill-button" @tap="openIdentityEditor">编辑身份</button>
-          <button class="ghost-button" @tap="openIdentityEditor">管理杠杆</button>
+          <button class="ghost-button" @tap="openIdentityEditor">管理动作</button>
         </view>
       </GradientHeroCard>
 
@@ -48,7 +48,7 @@
           </view>
         </view>
         <text class="muted-text">
-          「每日杠杆」就是你打断这个循环的工具:用每天的真实动作,反向把"那个人"塑造出来。
+          「每日动作」就是你打断这个循环的工具:用每天的真实动作,反向把"那个人"塑造出来。
         </text>
       </GlassCard>
 
@@ -72,7 +72,7 @@
 
       <GlassCard card-class="identity-card">
         <view class="identity-card__head">
-          <SectionLabel>每日杠杆摘要</SectionLabel>
+          <SectionLabel>每日动作摘要</SectionLabel>
           <button class="ghost-button identity-card__head-button" @tap="openIdentityEditor">
             管理
           </button>
@@ -92,8 +92,8 @@
               v-if="rule.linkedYearGoal || rule.linkedMonthProject"
               class="identity-rule__links"
             >
-              <text v-if="rule.linkedYearGoal" class="tag-chip">主线</text>
-              <text v-if="rule.linkedMonthProject" class="tag-chip">Boss 战</text>
+              <text v-if="rule.linkedYearGoal" class="tag-chip">这一年的方向</text>
+              <text v-if="rule.linkedMonthProject" class="tag-chip">Boss 战(这个月目标)</text>
             </view>
           </view>
         </view>
@@ -156,7 +156,7 @@ const loopSteps = [
 ];
 
 const proofSummaryTitle = computed(() => {
-  if (!activeProofRules.value.length) return "还没有可验证的身份动作。";
+  if (!activeProofRules.value.length) return "还没写下「每日动作」。";
   return `当前生效 ${activeProofRules.value.length} 条杠杆,它们决定你每天怎么证明这句话。`;
 });
 

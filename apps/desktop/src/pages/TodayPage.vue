@@ -16,7 +16,7 @@
         </button>
         <button type="button" class="btn btn-primary btn-sm" @click="openSynthesis">
           <Telescope :size="14" :stroke-width="iconStroke" />
-          <span>夜间综合</span>
+          <span>晚上回顾</span>
         </button>
       </template>
     </PageHeader>
@@ -24,12 +24,15 @@
     <PageBody>
       <div class="today-grid">
         <section class="today-col today-col--main">
-          <GlassCard v-if="!journeyCompleted && !onboardingCompleted" variant="hero">
-            <SectionLabel :icon="Sparkles">还没跑过一天流程</SectionLabel>
-            <h2 class="today-quest__title">建议先花 20 分钟读原文,然后留出整整一天答完 22 题。</h2>
+          <!-- 首次柔化卡:7 天内 dismiss 后不再显示 -->
+          <GlassCard
+            v-if="!journeyCompleted && !onboardingCompleted && !hideJourneyHint"
+            variant="hero"
+          >
+            <SectionLabel :icon="Sparkles">这套系统还有更深的一层</SectionLabel>
+            <h2 class="today-quest__title">等你哪天有一整段安静的时间,可以试试 22 题。</h2>
             <p class="body-text">
-              这套系统的灵魂是「严格按一天流程跑一遍」——11 道早晨开掘、9 道白天打断、5 步夜晚综合。
-              不跑这一遍,后面再多打卡也只是在表面。
+              它不是任务,是一次和自己的认真对话——什么时候做都来得及。
             </p>
             <div class="action-row">
               <button type="button" class="btn btn-primary" @click="openArticle">
@@ -38,11 +41,10 @@
               </button>
               <button type="button" class="btn btn-edit" @click="openJourneyMorning">
                 <Sun :size="14" :stroke-width="iconStroke" />
-                <span>开始一天流程</span>
+                <span>现在就开始</span>
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" @click="openOnboarding">
-                <Compass :size="14" :stroke-width="iconStroke" />
-                <span>跳过,直接快速设置</span>
+              <button type="button" class="btn btn-ghost btn-sm" @click="dismissJourneyHint">
+                <span>等我准备好了</span>
               </button>
             </div>
           </GlassCard>
@@ -55,7 +57,7 @@
 
           <GlassCard variant="hero">
             <div class="today-lens-row">
-              <SectionLabel :icon="Telescope">透镜</SectionLabel>
+              <SectionLabel :icon="Telescope">三维度</SectionLabel>
               <div class="today-lens-tabs">
                 <button
                   v-for="lens in lenses"
@@ -75,7 +77,7 @@
 
             <div v-if="monthProject && activeLens === 'year'" class="today-month">
               <div class="today-month__head">
-                <SectionLabel :icon="Swords">本月 Boss 战</SectionLabel>
+                <SectionLabel :icon="Swords">Boss 战(这个月目标)</SectionLabel>
                 <span v-if="monthDaysLeft !== null" class="tag-chip tag-chip--active">
                   <CalendarDays :size="12" :stroke-width="2" />
                   <span>{{ monthDaysLeft }}</span>
@@ -108,7 +110,7 @@
           <GlassCard>
             <div class="today-section__head">
               <div class="today-section__head-copy">
-                <SectionLabel :icon="CheckCircle2">每日杠杆</SectionLabel>
+                <SectionLabel :icon="CheckCircle2">每日动作</SectionLabel>
                 <h3 class="section-title">{{ proofProgressTitle }}</h3>
               </div>
               <span class="today-section__meta">
@@ -123,7 +125,7 @@
                 type="button"
                 class="today-proof"
                 :class="{ 'today-proof--done': completedProofIds.includes(rule.id) }"
-                @click="store.toggleProofCompletion(rule.id)"
+                @click="onProofClick(rule)"
               >
                 <span class="today-proof__mark">
                   <Check
@@ -141,17 +143,26 @@
                     v-if="rule.linkedYearGoal || rule.linkedMonthProject"
                     class="today-proof__links"
                   >
-                    <span v-if="rule.linkedYearGoal" class="tag-chip">主线</span>
-                    <span v-if="rule.linkedMonthProject" class="tag-chip">Boss 战</span>
+                    <span v-if="rule.linkedYearGoal" class="tag-chip">这一年的方向</span>
+                    <span v-if="rule.linkedMonthProject" class="tag-chip">Boss 战(这个月目标)</span>
                   </span>
+                  <transition name="cheer">
+                    <span
+                      v-if="cheerForRuleId === rule.id"
+                      class="today-proof__cheer"
+                    >
+                      <span class="today-proof__cheer-dot" />
+                      <span>{{ cheerText }}</span>
+                    </span>
+                  </transition>
                 </span>
               </button>
             </div>
             <EmptyState
               v-else
               :icon="ListChecks"
-              title="还没有生效的每日杠杆"
-              description="去身份页加一条,或者保存一次夜间综合,L3 的明日时间块会自动升格为杠杆。"
+              title="还没有每日动作"
+              description="去身份页加一条今天就能做到的小事,或者保存一次晚上回顾,明天就有了。"
             >
               <button type="button" class="btn btn-edit btn-sm" @click="openIdentityEditor">
                 <Pencil :size="14" :stroke-width="iconStroke" />
@@ -162,17 +173,35 @@
         </section>
 
         <aside class="today-col today-col--side">
+          <!-- 替换原来的"今日推进度 X%"为"今天的样子" -->
           <GlassCard>
-            <SectionLabel :icon="Gauge">今日推进度</SectionLabel>
-            <div class="today-score">
-              <span class="today-score__value">{{ alignmentScore }}</span>
-              <span class="today-score__unit">%</span>
+            <SectionLabel :icon="Sparkles">今天的样子</SectionLabel>
+            <p class="today-status">{{ todayStatusText }}</p>
+            <div class="today-status__row">
+              <span
+                v-for="(dot, idx) in 5"
+                :key="idx"
+                class="today-status__dot"
+                :class="{ 'today-status__dot--filled': idx < statusFilled }"
+              />
             </div>
-            <p class="muted-text">{{ alignmentHeadline }}</p>
-            <div class="progress-track">
-              <div class="progress-bar" :style="{ width: `${alignmentScore}%` }" />
+          </GlassCard>
+
+          <!-- 这一周 -->
+          <GlassCard>
+            <SectionLabel :icon="CalendarDays">这一周</SectionLabel>
+            <div class="today-week">
+              <div
+                v-for="(day, idx) in weekDays"
+                :key="day.dateKey"
+                class="today-week__cell"
+                :class="weekCellClass(day)"
+                :title="`${day.label} · 完成 ${day.completedProofCount} 项`"
+              >
+                <span class="today-week__weekday">{{ weekdayShort(idx) }}</span>
+              </div>
             </div>
-            <p class="faint-text today-score__hint">{{ alignmentHint }}</p>
+            <p class="muted-text">{{ weekCopy }}</p>
           </GlassCard>
 
           <GlassCard>
@@ -224,9 +253,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
-  Compass,
   Flame,
-  Gauge,
   LineChart,
   ListChecks,
   NotebookPen,
@@ -244,7 +271,9 @@ import {
   tokens,
   useAppStore,
   parseDateKey,
+  formatDateKey,
   type ReminderAction,
+  type RecordDay,
 } from "@guiling/core";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import PageBody from "@/components/layout/PageBody.vue";
@@ -260,13 +289,14 @@ const store = useAppStore();
 
 onMounted(() => store.refreshReminderPrompts());
 
+// 透镜 → 三维度。默认改成「今天的行动」(原来叫"每日反思")。
 type Lens = "year" | "month" | "today";
 const lenses: { value: Lens; label: string }[] = [
-  { value: "year", label: "一年透镜" },
-  { value: "month", label: "一月透镜" },
-  { value: "today", label: "每日透镜" },
+  { value: "today", label: "今天的行动" },
+  { value: "month", label: "这个月重点" },
+  { value: "year", label: "一年方向" },
 ];
-const activeLens = ref<Lens>("year");
+const activeLens = ref<Lens>("today");
 
 const todayPlan = computed(() => store.today.value.plan);
 const todaySnapshot = computed(() => store.today.value.snapshot);
@@ -280,7 +310,6 @@ const antiIdentityText = computed(
 );
 const proofRules = computed(() => store.activeProofRules());
 const completedProofIds = computed(() => todaySnapshot.value.completedProofRuleIds);
-const alignmentScore = computed(() => todaySnapshot.value.alignmentScore);
 const pendingPrompts = computed(() => store.state.pendingReminderPrompts);
 const primaryPrompt = computed(() => pendingPrompts.value[0] ?? null);
 const extraPrompts = computed(() => Math.max(0, pendingPrompts.value.length - 1));
@@ -292,6 +321,18 @@ const last14Days = computed(() =>
 );
 const onboardingCompleted = computed(() => store.state.data.onboardingCompleted);
 const journeyCompleted = computed(() => store.state.data.journeyCompleted);
+
+// 「等我准备好了」一键 dismiss 7 天。用 localStorage 持久化。
+const HINT_DISMISS_KEY = "guiling.journeyHintDismissedUntil";
+const hintDismissUntil = ref<number>(
+  Number(localStorage.getItem(HINT_DISMISS_KEY) ?? 0) || 0,
+);
+const hideJourneyHint = computed(() => Date.now() < hintDismissUntil.value);
+function dismissJourneyHint() {
+  const until = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  hintDismissUntil.value = until;
+  localStorage.setItem(HINT_DISMISS_KEY, String(until));
+}
 
 const monthProject = computed(() => store.state.data.visionProfile.monthProject.trim());
 const monthDaysLeft = computed(() => {
@@ -313,14 +354,14 @@ const lensCopy = computed(() => {
   const v = store.state.data.visionProfile;
   if (activeLens.value === "year") {
     return {
-      kicker: "用一年透镜看今天",
+      kicker: "用一年的尺度看今天",
       title: v.yearGoal || "先把这一年要走到哪定下来",
       body: v.yearGoalDescription || todayPlan.value.yearGoalDescription || "",
     };
   }
   if (activeLens.value === "month") {
     return {
-      kicker: "用一月透镜看今天",
+      kicker: "这个月要拿下的事",
       title: v.monthProject || "这个月要攻克的具体里程碑",
       body: v.monthProjectDescription || "",
     };
@@ -328,15 +369,15 @@ const lensCopy = computed(() => {
   // today
   const blocks = proofRules.value.slice(0, 3);
   return {
-    kicker: "用每日透镜看今天",
+    kicker: "今天要做的几件小事",
     title:
       blocks.length > 0
-        ? "今天的 2-3 个时间块"
-        : "保存一次夜间综合,明天就有时间块",
+        ? "今天的 2-3 件小事"
+        : "还没排好今天",
     body:
       blocks.length > 0
         ? blocks.map((b) => `· ${b.title}`).join("\n")
-        : "夜间综合 N5.L3 的「明日 2-3 个时间块」会自动升格成这里的每日杠杆。",
+        : "保存一次「晚上回顾」,明天就有了。或者去身份页加一条。",
   };
 });
 
@@ -360,22 +401,124 @@ const dailyQuote = computed(() => {
 });
 
 const proofProgressTitle = computed(() => {
-  if (!proofRules.value.length) return "先把今天的 2-3 个时间块定下来";
+  if (!proofRules.value.length) return "先把今天的 2-3 件小事定下来";
   if (completedProofIds.value.length === proofRules.value.length)
-    return "今天的杠杆全部到手";
-  return "把今天最关键的那个动作先做掉";
+    return "今天都做完了,稳住";
+  return "把今天最重要的那件先做掉";
 });
 
-const alignmentHeadline = computed(() => {
-  if (alignmentScore.value >= 80) return "节奏稳得住,继续这样跑。";
-  if (alignmentScore.value >= 50) return "在线,但还能压实一点。";
-  if (alignmentScore.value > 0) return "今天有些松动,做一个杠杆就开始拉回来。";
-  return "今天还没留下证据。先做最小的一个真实动作。";
+// "今天的样子"五挡正向语句(替换原来 X% 进度条)
+const todayHasNote = computed(() => todaySnapshot.value.todayNote.trim().length > 0);
+const todayHasSynthesis = computed(() => {
+  const ns = store.state.data.nightSynthesisByDate?.[store.state.activeDateKey];
+  return Boolean(ns && (ns.stuckReason || ns.enemyName || ns.visionMantra));
+});
+const statusFilled = computed(() => {
+  const done = completedProofIds.value.length;
+  const total = proofRules.value.length;
+  // 0/1/2/3+/全部+观察+综合 → 0..5
+  if (total > 0 && done === total && todayHasNote.value && todayHasSynthesis.value) return 5;
+  if (done >= 3) return 4;
+  if (done === 2) return 3;
+  if (done === 1) return 2;
+  return done > 0 ? 1 : 0;
+});
+const todayStatusText = computed(() => {
+  const done = completedProofIds.value.length;
+  const total = proofRules.value.length;
+  if (total > 0 && done === total && todayHasNote.value && todayHasSynthesis.value)
+    return "今天从头到尾认真过完了";
+  if (done >= 3) return "今天就是你想成为的样子";
+  if (done === 2) return "今天有那个你想成为的人的样子了";
+  if (done === 1) return "已经动起来了";
+  return "今天还没开始也没关系,做一件小事就行";
 });
 
-const alignmentHint = computed(() => {
-  if (!proofRules.value.length) return "去身份页或夜间综合 L3 添加杠杆,这里的分数才有意义。";
-  return `${completedProofIds.value.length}/${proofRules.value.length} 条杠杆已完成,提醒处理与观察记录也会算进分数。`;
+// —— 鼓励微反馈 —— 点完一个动作后短暂出一行字
+const cheerForRuleId = ref<string | null>(null);
+const cheerText = ref("");
+let cheerTimer: ReturnType<typeof setTimeout> | null = null;
+function onProofClick(rule: { id: string; title: string }) {
+  const wasDone = completedProofIds.value.includes(rule.id);
+  store.toggleProofCompletion(rule.id);
+  // 只在「从未完成 → 完成」时弹鼓励
+  if (!wasDone) {
+    const count = countCompletionsForRule(rule.id, rule.title);
+    cheerText.value = composeCheer(count, rule.title);
+    cheerForRuleId.value = rule.id;
+    if (cheerTimer) clearTimeout(cheerTimer);
+    cheerTimer = setTimeout(() => {
+      cheerForRuleId.value = null;
+    }, 3000);
+  }
+}
+// 从 actionLogs 里数当前规则的完成次数(包括本次)
+function countCompletionsForRule(ruleId: string, _title: string): number {
+  const logs = store.state.data.actionLogs;
+  return logs.filter((l) => l.type === "proof-complete" && l.refId === ruleId).length;
+}
+function composeCheer(count: number, title: string): string {
+  if (count <= 1) return `第一次做完「${title}」,记住这种感觉`;
+  if (count <= 6) return `这周第 ${count} 次做完「${title}」了`;
+  if (count <= 29) return `第 ${count} 次做完「${title}」,你已经熟了`;
+  return `第 ${count} 次做完「${title}」,这事已经成你的习惯了`;
+}
+
+// —— 这一周 ——
+const weekDays = computed<RecordDay[]>(() => {
+  // 取本周的周一到周日(以今天为参照),不足天数用空 day
+  const today = parseDateKey(store.state.activeDateKey);
+  const dow = today.getDay(); // 0=Sun, 1=Mon, ...
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  const daysFromStore = store.getRecordDays({
+    endDateKey: store.state.activeDateKey,
+    spanDays: 21,
+  });
+  const result: RecordDay[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = formatDateKey(d);
+    const found = daysFromStore.find((day) => day.dateKey === key);
+    result.push(
+      found ?? {
+        dateKey: key,
+        label: "",
+        weekday: "",
+        alignmentScore: null,
+        completedProofCount: 0,
+        note: "",
+        hasNightReview: false,
+      },
+    );
+  }
+  return result;
+});
+function weekCellClass(day: RecordDay) {
+  const isFuture = day.dateKey > store.state.activeDateKey;
+  if (isFuture) return "today-week__cell--future";
+  const c = day.completedProofCount;
+  if (c >= 4) return "today-week__cell--bright";
+  if (c >= 2) return "today-week__cell--mid";
+  if (c >= 1) return "today-week__cell--soft";
+  return "today-week__cell--empty";
+}
+function weekdayShort(idx: number): string {
+  return ["一", "二", "三", "四", "五", "六", "日"][idx];
+}
+const weekActiveDays = computed(
+  () => weekDays.value.filter((d) => d.completedProofCount >= 1).length,
+);
+const weekCopy = computed(() => {
+  const n = weekActiveDays.value;
+  if (n === 0) return "新的一周,什么时候开始都行";
+  if (n === 1) return "本周已经动了 1 天";
+  if (n === 2) return "本周保持了 2 天有行动";
+  if (n <= 4) return `本周保持了 ${n} 天有行动,稳住`;
+  if (n <= 6) return `本周保持了 ${n} 天有行动,这就是节奏`;
+  return "这一周每天都在动,挺好";
 });
 
 const reminderStatusTitle = computed(() => {
@@ -392,16 +535,15 @@ const reminderStatusBody = computed(() => {
 
 const streakCopy = computed(() => {
   if (streak.value.currentStreak > 0)
-    return "你正在累积连续性。这是身份最可靠的证据。";
+    return "你正在保持节奏,这种「在线感」最值钱。";
   if (streak.value.trackedDays > 0)
-    return "轨迹还在,只是断了一下。今天重新接上。";
-  return "今天留下第一条快照,系统就开始发力了。";
+    return "轨迹还在,只是断了一下。今天重新接上就行。";
+  return "今天留下第一条记录,系统就开始跑起来了。";
 });
 
 function handleReminderAction(ruleId: string, action: ReminderAction) {
   const prompt = pendingPrompts.value.find((item) => item.ruleId === ruleId);
   if (action === "complete" && prompt?.promptKey) {
-    // 让用户跳到一天流程作答(白天题在 day 页,通勤在 day 页,morning/night 各自页)
     if (prompt.kind === "morning") {
       router.push("/journey/morning");
     } else if (prompt.kind === "night") {
@@ -424,9 +566,6 @@ function openReminderSettings() {
 }
 function openIdentityEditor() {
   router.push("/identity/edit");
-}
-function openOnboarding() {
-  router.push("/onboarding");
 }
 function openArticle() {
   router.push("/path/article");
@@ -602,6 +741,7 @@ function openJourneyDay() {
   text-align: left;
   color: var(--si-color-text-soft);
   transition: background 140ms ease, border-color 140ms ease;
+  cursor: pointer;
 }
 
 .today-proof:hover {
@@ -658,14 +798,105 @@ function openJourneyDay() {
   margin-top: 4px;
 }
 
-.today-score,
+.today-proof__cheer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: var(--si-font-xs);
+  color: var(--si-color-brand);
+}
+
+.today-proof__cheer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--si-color-brand);
+  box-shadow: 0 0 8px var(--si-color-brand);
+}
+
+.cheer-enter-active,
+.cheer-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.cheer-enter-from,
+.cheer-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.today-status {
+  margin: 8px 0 12px;
+  font-size: var(--si-font-md);
+  line-height: 1.55;
+  color: var(--si-color-text-main);
+}
+
+.today-status__row {
+  display: flex;
+  gap: 6px;
+}
+
+.today-status__dot {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(113, 113, 122, 0.25);
+}
+
+.today-status__dot--filled {
+  background: var(--si-color-brand);
+}
+
+.today-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.today-week__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 6px;
+  font-size: var(--si-font-xs);
+  color: var(--si-color-text-faint);
+  background: rgba(63, 63, 70, 0.35);
+}
+
+.today-week__weekday {
+  font-size: 11px;
+}
+
+.today-week__cell--empty {
+  background: rgba(63, 63, 70, 0.35);
+}
+.today-week__cell--soft {
+  background: rgba(16, 185, 129, 0.25);
+  color: var(--si-color-brand-text);
+}
+.today-week__cell--mid {
+  background: rgba(16, 185, 129, 0.55);
+  color: var(--si-color-brand-deep);
+}
+.today-week__cell--bright {
+  background: var(--si-color-brand);
+  color: var(--si-color-brand-deep);
+  font-weight: var(--si-weight-semibold);
+}
+.today-week__cell--future {
+  background: rgba(63, 63, 70, 0.18);
+  color: rgba(113, 113, 122, 0.5);
+}
+
 .today-streak {
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
 
-.today-score__value,
 .today-streak__value {
   font-size: var(--si-font-4xl);
   line-height: 1;
@@ -674,14 +905,9 @@ function openJourneyDay() {
   letter-spacing: -0.02em;
 }
 
-.today-score__unit,
 .today-streak__unit {
   color: var(--si-color-text-faint);
   font-size: var(--si-font-md);
-}
-
-.today-score__hint {
-  font-size: var(--si-font-xs);
 }
 
 .today-link {

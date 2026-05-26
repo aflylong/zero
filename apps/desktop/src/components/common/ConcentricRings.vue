@@ -4,13 +4,13 @@
       <span class="concentric__label">规则 · 约束</span>
     </div>
     <div class="concentric__ring concentric__ring--levers">
-      <span class="concentric__label">支线 · 日常杠杆</span>
+      <span class="concentric__label">每日动作</span>
     </div>
     <div class="concentric__ring concentric__ring--month">
-      <span class="concentric__label">Boss 战 · 一月项目</span>
+      <span class="concentric__label">Boss 战(这个月目标)</span>
     </div>
     <div class="concentric__ring concentric__ring--year">
-      <span class="concentric__label">主线 · 一年目标</span>
+      <span class="concentric__label">一年方向</span>
     </div>
     <div class="concentric__core">
       <span class="concentric__core-label">愿景</span>

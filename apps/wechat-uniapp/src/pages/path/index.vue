@@ -28,19 +28,19 @@
       </view>
 
       <view class="path-splits">
-        <SectionLabel>最近一次「命名敌人」</SectionLabel>
+        <SectionLabel>最近一次「看清是什么挡住了你」</SectionLabel>
         <text class="body-text">{{ enemyNameDisplay }}</text>
-        <text class="muted-text">来自最近一次夜间综合(N2)。每天复盘时它会自动更新。</text>
+        <text class="muted-text">来自最近一次晚上回顾(N2)。每天复盘时它会自动更新。</text>
       </view>
 
       <GradientHeroCard card-class="path-quest">
-        <SectionLabel>一年目标 · 主线任务</SectionLabel>
+        <SectionLabel>一年方向</SectionLabel>
         <text class="path-quest__title">{{ yearGoalTitle }}</text>
         <text class="body-text">{{ yearGoalDesc }}</text>
       </GradientHeroCard>
 
       <view class="path-splits">
-        <SectionLabel>一月项目 · Boss 战</SectionLabel>
+        <SectionLabel>Boss 战(这个月目标)</SectionLabel>
         <text class="path-card__title">{{ monthProjectTitle }}</text>
         <text class="body-text">{{ monthProjectDesc }}</text>
       </view>
@@ -134,7 +134,7 @@ const enemyNameDisplay = computed(() => {
     const ns = map[keys[i]];
     if (ns?.enemyName?.trim()) return ns.enemyName.trim();
   }
-  return "还没命名过。今晚的「夜间综合 N2」就把它写下来。";
+  return "还没命名过。今晚的「晚上回顾 N2」就把它写下来。";
 });
 
 function openArticleReader() {

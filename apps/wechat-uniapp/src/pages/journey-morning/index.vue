@@ -7,7 +7,7 @@
   >
     <view class="journey-page">
       <GradientHeroCard card-class="journey-hero">
-        <SectionLabel>第 1 部分 · 心理开掘</SectionLabel>
+        <SectionLabel>第 1 部分 · 认真想清楚</SectionLabel>
         <text class="journey-hero__title">{{ introTitle }}</text>
         <text class="body-text">
           原文要求留出 15-30 分钟,严格不外包给 AI。把"挖痛"压成"反愿景",再把反愿景对准方向。
@@ -67,7 +67,7 @@
             class="pill-button journey-nav__btn"
             @tap="finishJourney"
           >
-            进入夜间综合
+            进入晚上回顾
           </button>
         </view>
       </GlassCard>
@@ -121,9 +121,9 @@ const questions = excavationQuestions;
 const totalQuestions = questions.length;
 
 const stages: { key: ExcavationStage; label: string }[] = [
-  { key: "discomfort", label: "看见钝感不满 (Q1-Q4)" },
-  { key: "anti-vision", label: "反愿景叙事 (Q5-Q11)" },
-  { key: "vision-mvp", label: "愿景 MVP (Q12-Q15)" },
+  { key: "discomfort", label: "看见心里的不舒服 (Q1-Q4)" },
+  { key: "anti-vision", label: "不想回去的样子 (Q5-Q11)" },
+  { key: "vision-mvp", label: "想去到的样子(最小版)(Q12-Q15)" },
 ];
 
 const currentKey = ref<string>(
@@ -158,9 +158,9 @@ const hasNext = computed(() => currentIndex.value < totalQuestions - 1);
 
 const introTitle = computed(() => {
   if (answeredCount.value === 0) return "你想去哪里、不要回到哪里。";
-  if (answeredCount.value < 11) return "继续往下挖。痛挖到位,反愿景才能转方向。";
-  if (answeredCount.value < 15) return "进入愿景 MVP。先放下「现实性」。";
-  return "已经全部答完。该进入夜晚综合。";
+  if (answeredCount.value < 11) return "继续往下挖。看清楚了,方向才会出来。";
+  if (answeredCount.value < 15) return "把想成为的样子写下来,先不管现不现实。";
+  return "已经全部答完。该进入晚上回顾了。";
 });
 
 function onAnswerInput(e: UniValueEvent) {

@@ -44,7 +44,7 @@ const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
  *   1-39   :低,faint
  *   40-69  :中,mid
  *   70+    :高,strong
- * 同时:有任意推进证据(完成杠杆 / 写观察 / 写综合)的格子也算"有证据",叠加底色。
+ * 同时:有任意推进证据(完成每日动作 / 写观察 / 写综合)的格子也算"有证据",叠加底色。
  */
 function cellClass(day: RecordDay) {
   const active = day.dateKey === props.activeDateKey;

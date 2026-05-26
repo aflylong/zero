@@ -61,17 +61,17 @@
             </GlassCard>
 
             <GlassCard>
-              <SectionLabel :icon="Crosshair">最近一次「命名敌人」</SectionLabel>
+              <SectionLabel :icon="Crosshair">最近一次「看清是什么挡住了你」</SectionLabel>
               <p class="path-body">{{ enemyNameDisplay }}</p>
               <p class="faint-text">
-                来自最近一次夜间综合(N2)。每天复盘时它会自动更新。
+                来自最近一次「晚上回顾」(N2)。每天复盘时它会自动更新。
               </p>
             </GlassCard>
           </div>
 
           <GlassCard variant="hero">
             <div class="path-section__head">
-              <SectionLabel :icon="Target">一年目标 · 主线任务</SectionLabel>
+              <SectionLabel :icon="Target">一年方向</SectionLabel>
               <span v-if="yearGoal" class="tag-chip">这是你的方向</span>
             </div>
             <p class="path-quest__title">{{ yearGoal }}</p>
@@ -80,7 +80,7 @@
 
           <GlassCard>
             <div class="path-section__head">
-              <SectionLabel :icon="Swords">一月项目 · Boss 战</SectionLabel>
+              <SectionLabel :icon="Swords">Boss 战(这个月目标)</SectionLabel>
               <span v-if="monthDeadline" class="tag-chip tag-chip--active">
                 <CalendarDays :size="12" :stroke-width="2" />
                 <span>{{ monthDeadline }}</span>
@@ -254,7 +254,7 @@ const constraints = computed(() =>
   store.state.data.visionProfile.constraints.filter((c) => c.trim()),
 );
 
-// 一月 Boss 战 XP 进度:用过去 30 天达到 60% 杠杆完成的天数作为代理
+// Boss 战进度:用过去 30 天里"完成 60% 以上每日动作"的天数作为参考
 const bossXp = computed(() => {
   const days = store.getRecordDays({
     endDateKey: store.state.activeDateKey,
@@ -268,7 +268,7 @@ const bossXp = computed(() => {
   return { total, done, percent };
 });
 
-// 最近一次"命名敌人"
+// 最近一次"看清是什么挡住了你"
 const enemyNameDisplay = computed(() => {
   const map = store.state.data.nightSynthesisByDate ?? {};
   const keys = Object.keys(map).sort();
@@ -276,7 +276,7 @@ const enemyNameDisplay = computed(() => {
     const ns = map[keys[i]];
     if (ns?.enemyName?.trim()) return ns.enemyName.trim();
   }
-  return "还没命名过。今晚的「夜间综合 N2」就把它写下来。";
+  return "还没写下来过。今晚做「晚上回顾」时把它写在 N2 那一格里就行。";
 });
 
 const articleProgress = computed(() => ({

@@ -7,7 +7,7 @@
   >
     <view class="journey-day">
       <GradientHeroCard card-class="journey-day__hero">
-        <SectionLabel>第 2 部分 · 中断自动驾驶</SectionLabel>
+        <SectionLabel>第 2 部分 · 白天打断</SectionLabel>
         <text class="journey-day__title">把你从惯性里拽出来。</text>
         <text class="body-text">
           原文要求把这 9 个问题安排成手机里的提醒,一到点就停下来作答。这一页让你直接当场写。
@@ -76,7 +76,7 @@
           调整提醒推送时间
         </button>
         <button class="pill-button journey-day__footer-btn" @tap="goNight">
-          进入夜间综合
+          进入晚上回顾
         </button>
       </view>
     </template>

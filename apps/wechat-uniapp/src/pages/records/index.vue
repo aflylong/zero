@@ -170,12 +170,12 @@ const trendHeadline = computed(() => {
   if (!windowSummary.value.trackedDays) return "这个窗口里还没留下记录。";
   if (windowSummary.value.averageAlignment >= 80) return "这段时间整体推进很稳。";
   if (windowSummary.value.averageAlignment >= 50) return "整体在线,还有些松动。";
-  return "这段时间偏离明显,做一个最小杠杆就能拉回来。";
+  return "这段时间偏离明显,做一件最小的事就能拉回来。";
 });
 
 const trendBody = computed(() => {
   if (!windowSummary.value.trackedDays) {
-    return "开始用今日页、提醒和夜间综合后,这里会长出可翻看的真实轨迹。";
+    return "开始用今日页、提醒和晚上回顾后,这里会长出可翻看的真实轨迹。";
   }
   return `当前窗口记录了 ${windowSummary.value.trackedDays} 天,其中 ${windowSummary.value.completedDays} 天留下了真实推进证据。`;
 });

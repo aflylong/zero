@@ -81,7 +81,7 @@
 
       <GlassCard v-else-if="currentStep === 2" card-class="onboarding-card">
         <view class="field-block">
-          <text class="field-label">一年目标 · 主线任务</text>
+          <text class="field-label">一年方向</text>
           <text class="muted-text">一年后你必须看到什么变化,才算真的打破了旧模式?</text>
           <input
             :value="yearGoal"
@@ -101,7 +101,7 @@
         </view>
 
         <view class="field-block">
-          <text class="field-label">一月项目 · Boss 战</text>
+          <text class="field-label">Boss 战(这个月目标)</text>
           <text class="muted-text">这个月要攻克的具体里程碑。它要服务于一年目标。</text>
           <input
             :value="monthProject"
@@ -152,7 +152,7 @@
 
           <view class="reminder-pair__item">
             <view class="reminder-pair__copy">
-              <text class="field-label">夜间综合</text>
+              <text class="field-label">晚上回顾</text>
               <text class="muted-text">把今天压成明天的方向。</text>
             </view>
             <picker mode="time" :value="nightReminderTime" @change="handleNightTimeChange">
@@ -222,7 +222,7 @@ const steps = [
   {
     short: "目标",
     title: "把一年目标和这个月的项目说清楚。",
-    description: "原文里这叫主线任务和 Boss 战。一年定方向,一月定里程碑。",
+    description: "一年定方向,一月定具体里程碑。一年定方向,一月定里程碑。",
   },
   {
     short: "启动",
@@ -336,8 +336,8 @@ function buildAllReminders(): ReminderRule[] {
       kind: "night",
       hour: n.hour,
       minute: n.minute,
-      label: "夜间综合",
-      message: "把今天压成 5 步:卡点 / 命名敌人 / 反愿景 / 愿景 / 三透镜。",
+      label: "晚上回顾",
+      message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
       promptKey: "night-synthesis",
     }),
   ];
@@ -355,11 +355,18 @@ function buildAllReminders(): ReminderRule[] {
         }),
       );
     } else if (dp.kind === "commute") {
+      // 通勤题默认时间:W1 早 6:50、W2 中午 12:30、W3 晚 19:00
+      const defaults: Record<string, [number, number]> = {
+        "w1-commute": [6, 50],
+        "w2-commute": [12, 30],
+        "w3-commute": [19, 0],
+      };
+      const [h, m] = defaults[dp.key] ?? [7, 0];
       list.push(
         buildReminder({
           kind: "commute",
-          hour: 0,
-          minute: 0,
+          hour: h,
+          minute: m,
           label: dp.label,
           message: dp.question,
           promptKey: dp.key,

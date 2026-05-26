@@ -1,16 +1,16 @@
 <template>
   <PageShell tab-key="today" title="今日">
     <view class="today-page">
-      <view v-if="!journeyStarted" class="today-welcome">
-        <SectionLabel>还没跑过一天流程</SectionLabel>
-        <text class="today-welcome__title">建议先花 20 分钟读原文,再留出整整一天答完 22 题。</text>
+      <view v-if="!journeyStarted && !hideJourneyHint" class="today-welcome">
+        <SectionLabel>这套系统还有更深的一层</SectionLabel>
+        <text class="today-welcome__title">等你哪天有一整段安静的时间,可以试试 22 题。</text>
         <text class="today-welcome__body">
-          这套系统的灵魂是「严格按一天流程跑一遍」——11 道早晨开掘、9 道白天打断、5 步夜晚综合。
-          不跑这一遍,后面再多打卡也只是在表面。
+          它不是任务,是一次和自己的认真对话——什么时候做都来得及。
         </text>
         <view class="action-row">
           <button class="pill-button" @tap="openArticleReader">先读原文</button>
-          <button class="ghost-button" @tap="openJourneyMorning">开始一天流程</button>
+          <button class="ghost-button" @tap="openJourneyMorning">现在就开始</button>
+          <button class="ghost-button" @tap="dismissJourneyHint">等我准备好了</button>
         </view>
       </view>
 
@@ -25,7 +25,7 @@
       </view>
 
       <GradientHeroCard card-class="today-quest">
-        <SectionLabel>今日主线</SectionLabel>
+        <SectionLabel>一年方向</SectionLabel>
         <text class="page-title today-quest__title">
           {{ todayPlan.yearGoalTitle || "先把这一年要走到哪定下来" }}
         </text>
@@ -33,7 +33,7 @@
         <view class="today-primary-actions">
           <button class="pill-button" @tap="openJourneyMorning">一天流程</button>
           <button class="ghost-button" @tap="openTodayNote">写观察</button>
-          <button class="ghost-button" @tap="openSynthesis">夜间综合</button>
+          <button class="ghost-button" @tap="openSynthesis">晚上回顾</button>
         </view>
         <button class="today-note-line" @tap="openTodayNote">
           <text class="today-note-line__label">今日观察</text>
@@ -50,7 +50,7 @@
       <GlassCard card-class="today-section">
         <view class="today-section__head">
           <view class="today-section__copy">
-            <SectionLabel>每日杠杆</SectionLabel>
+            <SectionLabel>每日动作</SectionLabel>
             <text class="today-section__title">{{ proofProgressLabel }}</text>
           </view>
           <text class="today-section__meta">{{ completedProofRuleIds.length }}/{{ proofRules.length }}</text>
@@ -74,23 +74,41 @@
           </button>
         </view>
         <text v-else class="muted-text">
-          还没有生效的每日杠杆。完成一次「夜间综合」后,L3 的明日时间块会自动升格。
+          还没有每日动作。完成一次「晚上回顾」后,L3 的几个时间段会自动加进明天的动作。
         </text>
       </GlassCard>
 
       <GlassCard card-class="today-section today-progress">
         <view class="today-section__head">
           <view class="today-section__copy">
-            <SectionLabel>今日推进度</SectionLabel>
-            <text class="today-section__title">{{ alignmentHeadline }}</text>
+            <SectionLabel>今天的样子</SectionLabel>
+            <text class="today-section__title">{{ todayStatusText }}</text>
           </view>
-          <text class="today-section__meta">{{ alignmentScore }}%</text>
         </view>
 
-        <view class="progress-track">
-          <view class="progress-bar" :style="{ width: `${alignmentScore}%` }" />
+        <view class="today-status__row">
+          <view
+            v-for="i in 5"
+            :key="i"
+            class="today-status__dot"
+            :class="{ 'today-status__dot--filled': i <= statusFilled }"
+          />
         </view>
-        <text class="muted-text">{{ alignmentHint }}</text>
+      </GlassCard>
+
+      <GlassCard card-class="today-section">
+        <SectionLabel>这一周</SectionLabel>
+        <view class="today-week">
+          <view
+            v-for="(day, idx) in weekDays"
+            :key="day.dateKey"
+            class="today-week__cell"
+            :class="weekCellClass(day)"
+          >
+            <text class="today-week__weekday">{{ weekdayShort(idx) }}</text>
+          </view>
+        </view>
+        <text class="muted-text">{{ weekCopy }}</text>
       </GlassCard>
 
       <GlassCard v-if="!primaryPrompt" card-class="today-section">
@@ -112,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import GlassCard from "@/components/GlassCard.vue";
 import GradientHeroCard from "@/components/GradientHeroCard.vue";
@@ -120,7 +138,8 @@ import PageShell from "@/components/PageShell.vue";
 import ReminderPrompt from "@/components/ReminderPrompt.vue";
 import SectionLabel from "@/components/SectionLabel.vue";
 import { useAppStore } from "@/stores/useAppStore";
-import type { ReminderAction } from "@/types/app";
+import { formatDateKey, parseDateKey } from "@/services/date";
+import type { ReminderAction, RecordDay } from "@/types/app";
 
 const store = useAppStore();
 
@@ -136,28 +155,105 @@ const todaySnapshot = computed(() => store.today.value.snapshot);
 const proofRules = computed(() => store.activeProofRules());
 const pendingPrompts = computed(() => store.state.pendingReminderPrompts);
 const completedProofRuleIds = computed(() => todaySnapshot.value.completedProofRuleIds);
-const alignmentScore = computed(() => todaySnapshot.value.alignmentScore);
 const primaryPrompt = computed(() => pendingPrompts.value[0] ?? null);
 const extraPromptCount = computed(() => Math.max(0, pendingPrompts.value.length - 1));
 
+// dismiss the 22-question hint for 7 days
+const HINT_DISMISS_KEY = "guiling.journeyHintDismissedUntil";
+const hintDismissUntil = ref<number>(
+  Number(uni.getStorageSync(HINT_DISMISS_KEY)) || 0,
+);
+const hideJourneyHint = computed(() => Date.now() < hintDismissUntil.value);
+function dismissJourneyHint() {
+  const until = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  hintDismissUntil.value = until;
+  uni.setStorageSync(HINT_DISMISS_KEY, until);
+}
+
 const proofProgressLabel = computed(() => {
-  if (!proofRules.value.length) return "先把今天的 2-3 个时间块定下来";
+  if (!proofRules.value.length) return "先把今天的 2-3 件小事定下来";
   if (completedProofRuleIds.value.length === proofRules.value.length)
-    return "今天的杠杆全部到手";
+    return "今天的动作都做完了,稳住";
   return "把今天最关键的那个动作先做掉";
 });
 
-const alignmentHeadline = computed(() => {
-  if (alignmentScore.value >= 70) return "节奏稳得住,继续这样跑。";
-  if (alignmentScore.value >= 40) return "在线,但还能压实一点。";
-  if (alignmentScore.value > 0) return "今天有些松动,做一个杠杆就开始拉回来。";
-  return "今天还没留下证据。先做最小的一个真实动作。";
+// 今天的样子 — 五挡正向语句
+const todayHasNote = computed(() => todaySnapshot.value.todayNote.trim().length > 0);
+const todayHasSynthesis = computed(() => {
+  const ns = store.state.data.nightSynthesisByDate?.[store.state.activeDateKey];
+  return Boolean(ns && (ns.stuckReason || ns.enemyName || ns.visionMantra));
+});
+const statusFilled = computed(() => {
+  const done = completedProofRuleIds.value.length;
+  const total = proofRules.value.length;
+  if (total > 0 && done === total && todayHasNote.value && todayHasSynthesis.value) return 5;
+  if (done >= 3) return 4;
+  if (done === 2) return 3;
+  if (done === 1) return 2;
+  return done > 0 ? 1 : 0;
+});
+const todayStatusText = computed(() => {
+  const done = completedProofRuleIds.value.length;
+  const total = proofRules.value.length;
+  if (total > 0 && done === total && todayHasNote.value && todayHasSynthesis.value)
+    return "今天从头到尾认真过完了";
+  if (done >= 3) return "今天就是你想成为的样子";
+  if (done === 2) return "今天有那个你想成为的人的样子了";
+  if (done === 1) return "已经动起来了";
+  return "今天还没开始也没关系,做一件小事就行";
 });
 
-const alignmentHint = computed(() => {
-  if (!proofRules.value.length)
-    return "去身份页或夜间综合 L3 添加杠杆,这里的分数才有意义。";
-  return `${completedProofRuleIds.value.length}/${proofRules.value.length} 条杠杆已完成,提醒处理与观察记录也会算进分数。`;
+// 这一周
+const weekDays = computed<RecordDay[]>(() => {
+  const today = parseDateKey(store.state.activeDateKey);
+  const dow = today.getDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  const daysFromStore = store.getRecordDays({
+    endDateKey: store.state.activeDateKey,
+    spanDays: 21,
+  });
+  const result: RecordDay[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = formatDateKey(d);
+    const found = daysFromStore.find((day) => day.dateKey === key);
+    result.push(
+      found ?? {
+        dateKey: key,
+        label: "",
+        weekday: "",
+        alignmentScore: null,
+        completedProofCount: 0,
+        note: "",
+        hasNightReview: false,
+      },
+    );
+  }
+  return result;
+});
+function weekCellClass(day: RecordDay) {
+  const isFuture = day.dateKey > store.state.activeDateKey;
+  if (isFuture) return "today-week__cell--future";
+  const c = day.completedProofCount;
+  if (c >= 4) return "today-week__cell--bright";
+  if (c >= 2) return "today-week__cell--mid";
+  if (c >= 1) return "today-week__cell--soft";
+  return "today-week__cell--empty";
+}
+function weekdayShort(idx: number): string {
+  return ["一", "二", "三", "四", "五", "六", "日"][idx];
+}
+const weekCopy = computed(() => {
+  const n = weekDays.value.filter((d) => d.completedProofCount >= 1).length;
+  if (n === 0) return "新的一周,什么时候开始都行";
+  if (n === 1) return "本周已经动了 1 天";
+  if (n === 2) return "本周保持了 2 天有行动";
+  if (n <= 4) return `本周保持了 ${n} 天有行动,稳住`;
+  if (n <= 6) return `本周保持了 ${n} 天有行动,这就是节奏`;
+  return "这一周每天都在动,挺好";
 });
 
 const notePreview = computed(() => {
@@ -388,4 +484,50 @@ onShow(() => {
 }
 .today-welcome__title { color: #f5f5f5; font-size: 36rpx; line-height: 1.4; font-weight: 600; }
 .today-welcome__body { color: #d4d4d8; font-size: 26rpx; line-height: 1.6; }
+
+.today-status__row {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.today-status__dot {
+  flex: 1;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: rgba(113, 113, 122, 0.32);
+}
+
+.today-status__dot--filled {
+  background: #34d399;
+}
+
+.today-week {
+  display: flex;
+  gap: 8rpx;
+  margin: 12rpx 0;
+}
+
+.today-week__cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  border-radius: 10rpx;
+  background: rgba(63, 63, 70, 0.4);
+}
+
+.today-week__weekday {
+  color: #a1a1aa;
+  font-size: 22rpx;
+}
+
+.today-week__cell--empty { background: rgba(63, 63, 70, 0.4); }
+.today-week__cell--soft { background: rgba(16, 185, 129, 0.28); }
+.today-week__cell--mid { background: rgba(16, 185, 129, 0.55); }
+.today-week__cell--bright { background: #34d399; }
+.today-week__cell--bright .today-week__weekday { color: #042f2e; font-weight: 600; }
+.today-week__cell--future { background: rgba(63, 63, 70, 0.18); }
+.today-week__cell--future .today-week__weekday { color: rgba(113, 113, 122, 0.5); }
 </style>

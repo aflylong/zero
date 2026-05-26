@@ -1,9 +1,9 @@
 /**
- * 白天打断作答 — 严格对应原文 Part 2:
+ * 白天的 9 道反思题 — 对应原文 Part 2:
  *   6 个固定时间点(D1-D6) + 3 道通勤反思(W1-W3)。
  *
- * 题干尽量贴原文。每条带建议时间(用于 onboarding 默认种子),
- * 用户可以在「提醒设置」页里改。
+ * 文案以"温柔开场 + 一句口语化问题"为主,避免书面词。
+ * 题干在 UI 与通知正文里都直接展示,所以一句话能读懂最重要。
  */
 
 export type DayPromptKind = "day" | "commute";
@@ -29,19 +29,18 @@ export const dayPrompts: DayPrompt[] = [
     kind: "day",
     hour: 11,
     minute: 0,
-    label: "D1 · 我在回避什么",
-    question: "我现在正在用我正在做的事来回避什么?",
-    helper: "停 30 秒。回避的对象往往就是你最该做的事。",
+    label: "D1 · 你在躲什么",
+    question: "歇一下,你手头这件事,是不是其实在躲另一件?",
+    helper: "停 30 秒。我们躲开的事,常常就是最该做的事。",
   },
   {
     key: "d2-1330",
     kind: "day",
     hour: 13,
     minute: 30,
-    label: "D2 · 行为录像",
-    question:
-      "如果有人拍下我过去两小时的行为,他们会得出结论:我想从人生里得到什么?",
-    helper: "用第三人称看自己。身体诚实,嘴不诚实。",
+    label: "D2 · 倒带看看",
+    question: "过去两小时你都在干嘛?光看动作,你最想要的是什么?",
+    helper: "用旁观者的角度看自己。身体诚实,嘴不诚实。",
   },
   {
     key: "d3-1515",
@@ -49,57 +48,56 @@ export const dayPrompts: DayPrompt[] = [
     hour: 15,
     minute: 15,
     label: "D3 · 朝哪边走",
-    question: "我是在朝我讨厌的生活走,还是朝我想要的生活走?",
-    helper: "二选一。不要找中间答案。",
+    question: "你今天做的事,是在靠近想要的生活,还是离它越来越远?",
+    helper: "二选一就好,不用找中间答案。",
   },
   {
     key: "d4-1700",
     kind: "day",
     hour: 17,
     minute: 0,
-    label: "D4 · 假装不重要",
-    question: "我在假装「并不重要」的、最重要的事情是什么?",
-    helper: "你心里有那件事。写下它。",
+    label: "D4 · 心里那件事",
+    question: "你嘴上说不重要,其实心里一直惦记的,是什么?",
+    helper: "心里有那件事。把它写下来。",
   },
   {
     key: "d5-1930",
     kind: "day",
     hour: 19,
     minute: 30,
-    label: "D5 · 身份保护 vs 真实欲望",
-    question: "我今天有多少行为是出于身份保护,而不是真实欲望?",
-    helper: "提示:大多数事情都是。这不是审判,是看清。",
+    label: "D5 · 真做还是怕被人说",
+    question: "你今天做的事,有多少是为了不被人说,有多少是真的想做?",
+    helper: "看清楚就行,不用立刻改。",
   },
   {
     key: "d6-2100",
     kind: "day",
     hour: 21,
     minute: 0,
-    label: "D6 · 生命力 vs 像死了",
-    question: "我今天什么时候最有生命力?什么时候最像死了一样?",
-    helper: "这两个时刻指向你真正的方向。",
+    label: "D6 · 哪个时刻最来劲",
+    question: "今天什么时候你最来劲?什么时候最没劲?",
+    helper: "这两个时刻,会指向你真正的方向。",
   },
   {
     key: "w1-commute",
     kind: "commute",
-    label: "W1 · 不再被那样看",
-    question:
-      "如果我不再需要别人把我看作 [Q10 写下的那种身份],会发生什么变化?",
-    helper: "通勤、散步、发呆时想这条。",
+    label: "W1 · 不被那样看以后",
+    question: "如果别人不再把你看成那种人,你会变成什么样?",
+    helper: "通勤、散步、发呆时慢慢想。",
   },
   {
     key: "w2-commute",
     kind: "commute",
-    label: "W2 · 生命力换安全感",
-    question: "我人生的哪个地方正在用「生命力」交换「安全感」?",
-    helper: "诚实写一个具体场景。",
+    label: "W2 · 拿什么换什么",
+    question: "你的生活里,哪一块是在用劲头换安心?",
+    helper: "诚实写一个具体场景就够。",
   },
   {
     key: "w3-commute",
     kind: "commute",
-    label: "W3 · 最小版本",
-    question: "我明天就能成为的、「我想成为的那个人」的最小版本是什么?",
-    helper: "最小是几分钟、一句话、一个动作。",
+    label: "W3 · 最小一步",
+    question: "你想成为的那个人,明天能做出来的最小一步是什么?",
+    helper: "一句话、一个动作、几分钟,就行。",
   },
 ];
 

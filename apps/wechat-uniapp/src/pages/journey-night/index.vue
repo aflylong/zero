@@ -1,6 +1,6 @@
 <template>
   <PageShell
-    title="夜间综合"
+    title="晚上回顾"
     topbar-mode="secondary"
     back-url="/pages/today/index"
     :back-action="goBack"
@@ -10,10 +10,10 @@
         <SectionLabel>第 3 部分 · 综合洞见</SectionLabel>
         <text class="journey-night__title">{{ description }}</text>
         <text class="body-text">
-          原文 5 步:卡点 / 命名敌人 / 压缩反愿景 / 压缩愿景 / 三透镜。顺序很重要。
+          原文 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。顺序很重要。
         </text>
         <text class="muted-text">
-          保存时 N3 / N4 会自动写回到「道路」的反愿景与愿景顶部;N5.L3 的明日时间块会自动升格为「今日杠杆」。
+          保存时 N3 / N4 会自动写回到「道路」的反愿景与愿景顶部;N5.L3 的几个时间段会自动加进明天的「每日动作」。
         </text>
       </GradientHeroCard>
 
@@ -35,7 +35,7 @@
 
       <!-- N2 -->
       <GlassCard card-class="journey-night__card">
-        <SectionLabel>N2 · 命名敌人</SectionLabel>
+        <SectionLabel>N2 · 看清是什么挡住了你</SectionLabel>
         <text class="muted-text">
           真正的敌人是什么?把它清楚命名。不是环境,不是别人,而是那个一直在掌控局面的内在模式或信念。
         </text>
@@ -65,7 +65,7 @@
 
       <!-- N4 -->
       <GlassCard card-class="journey-night__card">
-        <SectionLabel>N4 · 一句话愿景 MVP</SectionLabel>
+        <SectionLabel>N4 · 一句话「想去到的样子(最小版)」</SectionLabel>
         <text class="muted-text">
           写一句话,概括你正在朝什么方向建造(并且你知道它会演化)。
         </text>
@@ -80,13 +80,13 @@
 
       <!-- N5 -->
       <GlassCard card-class="journey-night__card">
-        <SectionLabel>N5 · 创建三透镜</SectionLabel>
+        <SectionLabel>N5 · 三维度</SectionLabel>
         <text class="muted-text">
           目标不是为了「成就」,目标是一种透镜。换上对的透镜,你就会看到该看到的信息。
         </text>
 
         <view class="field-block">
-          <text class="field-label">L1 · 一年透镜</text>
+          <text class="field-label">L1 · 一年方向</text>
           <text class="muted-text">一年后必须有什么变成事实,你才会确信自己打破了旧模式?</text>
           <input
             class="input-shell"
@@ -98,8 +98,8 @@
         </view>
 
         <view class="field-block">
-          <text class="field-label">L2 · 一月透镜</text>
-          <text class="muted-text">一个月后必须有什么变成事实,才能让「一年透镜」依然可能?</text>
+          <text class="field-label">L2 · 这个月重点</text>
+          <text class="muted-text">一个月后必须有什么变成事实,才能让「一年方向」依然可能?</text>
           <input
             class="input-shell"
             :value="form.monthLens"
@@ -110,9 +110,9 @@
         </view>
 
         <view class="field-block">
-          <text class="field-label">L3 · 每日透镜 · 明天 2-3 个时间块</text>
+          <text class="field-label">L3 · 今天的行动 · 明天 2-3 个时间段</text>
           <text class="muted-text">
-            这些是「你正在成为的那个人」会理所当然去做的事。保存后会自动出现在明天的「今日杠杆」。
+            这些是「你正在成为的那个人」会理所当然去做的事。保存后会自动出现在明天的「每日动作」。
           </text>
           <view class="journey-night__blocks">
             <view
@@ -147,7 +147,7 @@
               class="ghost-button"
               @tap="addBlock"
             >
-              + 添加时间块
+              + 添加时间段
             </button>
           </view>
         </view>
