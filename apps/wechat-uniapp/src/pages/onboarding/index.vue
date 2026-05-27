@@ -303,6 +303,7 @@ function buildReminder(input: {
   label: string;
   message: string;
   promptKey?: string;
+  daysOfWeek?: number[];
 }): ReminderRule {
   return {
     id: `reminder-${input.kind}-${input.promptKey ?? Math.random().toString(36).slice(2, 6)}`,
@@ -312,6 +313,7 @@ function buildReminder(input: {
     hour: input.hour,
     minute: input.minute,
     enabled: true,
+    daysOfWeek: input.daysOfWeek,
     deliveryMode: "in-app",
     subscriptionStatus: "pending",
     message: input.message,
@@ -339,6 +341,15 @@ function buildAllReminders(): ReminderRule[] {
       label: "晚上回顾",
       message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
       promptKey: "night-synthesis",
+    }),
+    buildReminder({
+      kind: "night",
+      hour: 21,
+      minute: 0,
+      daysOfWeek: [0],
+      label: "本周校准方向",
+      message: "周日晚上 5 分钟:把这一周的状态对一下方向。展开「想重新校准方向?」就行。",
+      promptKey: "weekly-recalibrate",
     }),
   ];
 

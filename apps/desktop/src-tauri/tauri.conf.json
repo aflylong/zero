@@ -1,6 +1,6 @@
 {
   "productName": "归零",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "identifier": "app.guiling.desktop",
   "build": {
     "frontendDist": "../dist",

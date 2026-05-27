@@ -316,6 +316,7 @@ function buildReminder(
   label: string,
   message: string,
   promptKey?: string,
+  daysOfWeek?: number[],
 ): ReminderRule {
   return {
     id: `reminder-${kind}-${promptKey ?? Math.random().toString(36).slice(2, 6)}`,
@@ -325,6 +326,7 @@ function buildReminder(
     hour,
     minute,
     enabled: true,
+    daysOfWeek,
     deliveryMode: "system-notification",
     subscriptionStatus: "accepted",
     message,
@@ -357,6 +359,16 @@ function buildAllReminders(): ReminderRule[] {
       "晚上回顾",
       "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
       "night-synthesis",
+    ),
+    // 周日多推一条「重新校准方向」(完整 5 步,1 周一次)
+    buildReminder(
+      "night",
+      21,
+      0,
+      "本周校准方向",
+      "周日晚上 5 分钟:把这一周的状态对一下方向。展开「想重新校准方向?」就行。",
+      "weekly-recalibrate",
+      [0],
     ),
   ];
 

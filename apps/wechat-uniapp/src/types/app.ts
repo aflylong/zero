@@ -70,7 +70,7 @@ export interface DayPromptResponse {
   answeredAt: string;
 }
 
-/** 夜晚综合 — 对应原文 Part 3 的 5 步 */
+/** 晚上回顾 — 对应原文 Part 3 的 5 步;0.3.1 拆成轻量(每天)+ 完整校准(N1-N5) */
 export interface NightSynthesis {
   dateKey: string;
   stuckReason: string;
@@ -80,6 +80,12 @@ export interface NightSynthesis {
   yearLens: string;
   monthLens: string;
   tomorrowBlocks: TomorrowBlock[];
+  /** 0.3.1+ 每天轻量回顾:今天哪一刻最有感觉 */
+  dailyHighlight: string;
+  /** 0.3.1+ 每天轻量回顾:一句话总结今天(可选) */
+  dailySummary: string;
+  /** 0.3.1+ 上一次完整 N1-N5 校准时间(ISO) */
+  lastFullReviewAt: string | null;
   updatedAt: string;
 }
 
@@ -145,6 +151,8 @@ export interface ReminderRule {
   hour: number;
   minute: number;
   enabled: boolean;
+  /** 0.3.1+ 周几触发;空 = 每天。0=周日,1=周一,..., 6=周六 */
+  daysOfWeek?: number[];
   deliveryMode: DeliveryMode;
   subscriptionStatus: SubscriptionStatus;
   message: string;

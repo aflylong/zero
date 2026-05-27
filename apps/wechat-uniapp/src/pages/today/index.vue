@@ -14,6 +14,19 @@
         </view>
       </view>
 
+      <!-- 30 天没做完整校准时的温柔卡 -->
+      <view v-if="showRecalibrateCard" class="today-recalibrate">
+        <SectionLabel>方向定下来一阵子了</SectionLabel>
+        <text class="today-recalibrate__title">{{ recalibrateTitle }}</text>
+        <text class="today-recalibrate__body">
+          人会变,方向也该跟着调整。花 5 分钟做一次完整校准,把当下的状态对一下方向。
+        </text>
+        <view class="action-row">
+          <button class="pill-button" @tap="openFullReview">现在校准</button>
+          <button class="ghost-button" @tap="snoozeRecalibrate">跳过 30 天</button>
+        </view>
+      </view>
+
       <view class="today-identity">
         <SectionLabel>你是谁</SectionLabel>
         <text class="hero-title today-identity__title">
@@ -33,7 +46,7 @@
         <view class="today-primary-actions">
           <button class="pill-button" @tap="openJourneyMorning">一天流程</button>
           <button class="ghost-button" @tap="openTodayNote">写观察</button>
-          <button class="ghost-button" @tap="openSynthesis">晚上回顾</button>
+          <button class="ghost-button" @tap="openSynthesis">今晚 3 件事</button>
         </view>
         <button class="today-note-line" @tap="openTodayNote">
           <text class="today-note-line__label">今日观察</text>
@@ -168,6 +181,50 @@ function dismissJourneyHint() {
   const until = Date.now() + 7 * 24 * 60 * 60 * 1000;
   hintDismissUntil.value = until;
   uni.setStorageSync(HINT_DISMISS_KEY, until);
+}
+
+// 30 天后的「重新校准方向」温柔卡
+const RECAL_DISMISS_KEY = "guiling.recalibrateDismissedUntil";
+const recalDismissUntil = ref<number>(
+  Number(uni.getStorageSync(RECAL_DISMISS_KEY)) || 0,
+);
+function findLastFullReviewAt(): string | null {
+  const map = store.state.data.nightSynthesisByDate ?? {};
+  let last: string | null = null;
+  for (const ns of Object.values(map)) {
+    if (ns.lastFullReviewAt && (!last || ns.lastFullReviewAt > last)) {
+      last = ns.lastFullReviewAt;
+    }
+  }
+  return last;
+}
+const showRecalibrateCard = computed(() => {
+  if (!journeyStarted.value) return false;
+  if (Date.now() < recalDismissUntil.value) return false;
+  const lastFull = findLastFullReviewAt();
+  if (!lastFull) return false;
+  const days = Math.floor(
+    (Date.now() - new Date(lastFull).getTime()) / (24 * 60 * 60 * 1000),
+  );
+  return days >= 30;
+});
+const recalibrateTitle = computed(() => {
+  const lastFull = findLastFullReviewAt();
+  if (!lastFull) return "要不要再校准一下?";
+  const days = Math.floor(
+    (Date.now() - new Date(lastFull).getTime()) / (24 * 60 * 60 * 1000),
+  );
+  if (days < 60) return "方向定下来一个月了,要不要再校准一下?";
+  if (days < 90) return "方向定下来两个月了,要不要再校准一下?";
+  return `方向已经过去 ${Math.floor(days / 30)} 个月了,值得花几分钟重新看看`;
+});
+function snoozeRecalibrate() {
+  const until = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  recalDismissUntil.value = until;
+  uni.setStorageSync(RECAL_DISMISS_KEY, until);
+}
+function openFullReview() {
+  uni.navigateTo({ url: "/pages/journey-night/index?fullReview=1" });
 }
 
 const proofProgressLabel = computed(() => {
@@ -484,6 +541,19 @@ onShow(() => {
 }
 .today-welcome__title { color: #f5f5f5; font-size: 36rpx; line-height: 1.4; font-weight: 600; }
 .today-welcome__body { color: #d4d4d8; font-size: 26rpx; line-height: 1.6; }
+
+.today-recalibrate {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  border-radius: 24rpx;
+  background: rgba(30, 64, 175, 0.16);
+}
+.today-recalibrate__title { color: #f5f5f5; font-size: 32rpx; line-height: 1.4; font-weight: 600; }
+.today-recalibrate__body { color: #d4d4d8; font-size: 26rpx; line-height: 1.6; }
 
 .today-status__row {
   display: flex;

@@ -86,12 +86,17 @@ export interface DayPromptResponse {
 /**
  * 夜晚综合 — 对应原文 Part 3 的 5 步。
  * 这套结构会在保存时把 N3/N4 回写到 visionProfile,实现"洞见固化"。
+ *
+ * 0.3.1 拆成两层:
+ *   - 每天:dailyHighlight + tomorrowBlocks + dailySummary(轻量,1 分钟写完)
+ *   - 重启日 / 主动展开:N1-N4 + yearLens / monthLens 完整 5 步校准
+ *     完整校准时间记录在 lastFullReviewAt。
  */
 export interface NightSynthesis {
   dateKey: string;
   /** N1 卡住的真正原因 */
   stuckReason: string;
-  /** N2 命名敌人 — 不是环境/别人,是内在模式或信念 */
+  /** N2 看清是什么挡住了你 — 不是环境/别人,是内在模式或信念 */
   enemyName: string;
   /** N3 一句话压缩反愿景 */
   antiVisionMantra: string;
@@ -103,6 +108,12 @@ export interface NightSynthesis {
   monthLens: string;
   /** N5.L3 明天 2-3 个 timeblock 行动 */
   tomorrowBlocks: TomorrowBlock[];
+  /** 0.3.1+ 每天轻量回顾:今天哪一刻最有感觉 */
+  dailyHighlight: string;
+  /** 0.3.1+ 每天轻量回顾:一句话总结今天(可选) */
+  dailySummary: string;
+  /** 0.3.1+ 上一次完整 N1-N5 校准时间(ISO);用于 30 天提醒重新校准 */
+  lastFullReviewAt: string | null;
   updatedAt: string;
 }
 
@@ -201,6 +212,8 @@ export interface ReminderRule {
   hour: number;
   minute: number;
   enabled: boolean;
+  /** 0.3.1+ 周几触发;空 = 每天触发。0=周日,1=周一,..., 6=周六 */
+  daysOfWeek?: number[];
   deliveryMode: DeliveryMode;
   subscriptionStatus: SubscriptionStatus;
   /** 旁白文案;promptKey 的题干优先 */

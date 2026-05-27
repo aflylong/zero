@@ -172,7 +172,7 @@ interface Group {
   kind: ReminderKind;
   title: string;
   description: string;
-  rules: ReminderRule[];
+  rules: readonly ReminderRule[];
 }
 
 const groupedRules = computed<Group[]>(() => {
@@ -201,7 +201,7 @@ const groupedRules = computed<Group[]>(() => {
     kind,
     title: titles[kind].title,
     description: titles[kind].description,
-    rules: reminderRules.value.filter((r) => r.kind === kind),
+    rules: reminderRules.value.filter((r) => r.kind === kind) as readonly ReminderRule[],
   }));
 });
 
@@ -305,6 +305,17 @@ function seedDefaults() {
       hour: 21,
       minute: 30,
       message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
+    });
+  }
+  if (!have.has("weekly-recalibrate")) {
+    store.createReminderRule({
+      kind: "night",
+      promptKey: "weekly-recalibrate",
+      label: "本周校准方向",
+      hour: 21,
+      minute: 0,
+      daysOfWeek: [0],
+      message: "周日晚上 5 分钟:把这一周的状态对一下方向。展开「想重新校准方向?」就行。",
     });
   }
 }

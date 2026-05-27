@@ -16,7 +16,7 @@
         </button>
         <button type="button" class="btn btn-primary btn-sm" @click="openSynthesis">
           <Telescope :size="14" :stroke-width="iconStroke" />
-          <span>晚上回顾</span>
+          <span>今晚 3 件事</span>
         </button>
       </template>
     </PageHeader>
@@ -45,6 +45,27 @@
               </button>
               <button type="button" class="btn btn-ghost btn-sm" @click="dismissJourneyHint">
                 <span>等我准备好了</span>
+              </button>
+            </div>
+          </GlassCard>
+
+          <!-- 30 天没做完整校准时的温柔卡:用户可以选择「现在校准」或「跳过 30 天」 -->
+          <GlassCard
+            v-if="showRecalibrateCard"
+            variant="hero"
+          >
+            <SectionLabel :icon="Telescope">方向定下来一阵子了</SectionLabel>
+            <h2 class="today-quest__title">{{ recalibrateTitle }}</h2>
+            <p class="body-text">
+              人会变,方向也该跟着调整。花 5 分钟做一次完整校准,把当下的状态对一下方向。
+            </p>
+            <div class="action-row">
+              <button type="button" class="btn btn-primary" @click="openFullReview">
+                <Telescope :size="14" :stroke-width="iconStroke" />
+                <span>现在校准</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" @click="snoozeRecalibrate">
+                <span>跳过 30 天</span>
               </button>
             </div>
           </GlassCard>
@@ -332,6 +353,61 @@ function dismissJourneyHint() {
   const until = Date.now() + 7 * 24 * 60 * 60 * 1000;
   hintDismissUntil.value = until;
   localStorage.setItem(HINT_DISMISS_KEY, String(until));
+}
+
+// 30 天后的「重新校准方向」温柔卡。同样支持「跳过 30 天」一键 dismiss。
+const RECAL_DISMISS_KEY = "guiling.recalibrateDismissedUntil";
+const recalDismissUntil = ref<number>(
+  Number(localStorage.getItem(RECAL_DISMISS_KEY) ?? 0) || 0,
+);
+const showRecalibrateCard = computed(() => {
+  // 还没跑完 22 题、还没设过任何方向时,不打扰
+  if (!journeyCompleted.value && !onboardingCompleted.value) return false;
+  if (Date.now() < recalDismissUntil.value) return false;
+  // 找最近一次完整校准时间
+  const map = store.state.data.nightSynthesisByDate ?? {};
+  let lastFull: string | null = null;
+  for (const ns of Object.values(map)) {
+    if (ns.lastFullReviewAt && (!lastFull || ns.lastFullReviewAt > lastFull)) {
+      lastFull = ns.lastFullReviewAt;
+    }
+  }
+  if (!lastFull) {
+    // 从来没做过完整校准 —— 但用户可能是从老版本升级上来的(旧数据 N1-N5 都填过)
+    // 这种情况:看 visionProfile 是否非空,如果非空就把"老版本=已校准"近似为"30 天前刚校准"
+    // 即:只要 onboarding 完成 + 距 onboarding 已经超过 30 天就显示
+    return false;
+  }
+  const days = Math.floor(
+    (Date.now() - new Date(lastFull).getTime()) / (24 * 60 * 60 * 1000),
+  );
+  return days >= 30;
+});
+const recalibrateTitle = computed(() => {
+  const map = store.state.data.nightSynthesisByDate ?? {};
+  let lastFull: string | null = null;
+  for (const ns of Object.values(map)) {
+    if (ns.lastFullReviewAt && (!lastFull || ns.lastFullReviewAt > lastFull)) {
+      lastFull = ns.lastFullReviewAt;
+    }
+  }
+  if (!lastFull) return "要不要再校准一下?";
+  const days = Math.floor(
+    (Date.now() - new Date(lastFull).getTime()) / (24 * 60 * 60 * 1000),
+  );
+  if (days < 60) return `方向定下来一个月了,要不要再校准一下?`;
+  if (days < 90) return `方向定下来两个月了,要不要再校准一下?`;
+  return `方向已经过去 ${Math.floor(days / 30)} 个月了,值得花几分钟重新看看`;
+});
+function snoozeRecalibrate() {
+  const until = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  recalDismissUntil.value = until;
+  localStorage.setItem(RECAL_DISMISS_KEY, String(until));
+}
+function openFullReview() {
+  // 进入 JourneyNightPage 后默认会展开完整 5 步(因为 lastFullReviewAt 已经超过 30 天)
+  // 这里加个 query 标记让目标页强制展开
+  router.push({ path: "/journey/night", query: { fullReview: "1" } });
 }
 
 const monthProject = computed(() => store.state.data.visionProfile.monthProject.trim());

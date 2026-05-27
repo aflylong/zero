@@ -92,6 +92,9 @@ function createEmptyNightSynthesis(dateKey: string): NightSynthesis {
     yearLens: "",
     monthLens: "",
     tomorrowBlocks: [],
+    dailyHighlight: "",
+    dailySummary: "",
+    lastFullReviewAt: null,
     updatedAt: nowIso(),
   };
 }
@@ -479,6 +482,10 @@ function refreshReminderPrompts(now: Date = new Date()): void {
       }
       // 所有 reminder 都按 hour/minute 触发(包括 commute);
       // 用户不想被通勤题打扰可以在「提醒设置」里把它们关掉。
+      // 0.3.1+ 周几过滤:daysOfWeek 为空 = 每天触发;非空 = 只在指定 weekday 触发
+      if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+        if (!rule.daysOfWeek.includes(now.getDay())) return false;
+      }
       const dueTime = buildDateTime(dateKey, rule.hour, rule.minute);
       return now.getTime() >= dueTime.getTime();
     })
@@ -708,6 +715,7 @@ function createReminderRule(seed: Partial<ReminderRule>): ReminderRule {
     hour: seed.hour ?? 11,
     minute: seed.minute ?? 0,
     enabled: seed.enabled ?? true,
+    daysOfWeek: seed.daysOfWeek,
     deliveryMode: seed.deliveryMode ?? "system-notification",
     subscriptionStatus: seed.subscriptionStatus ?? "accepted",
     message: seed.message ?? "",
@@ -880,56 +888,102 @@ function setExcavationCurrent(key: string): void {
 // —— Night Synthesis ——
 function getNightSynthesis(dateKey: string = internalState.activeDateKey): NightSynthesis {
   const map = internalState.data.nightSynthesisByDate ?? {};
-  return map[dateKey] ?? createEmptyNightSynthesis(dateKey);
+  const found = map[dateKey];
+  if (!found) return createEmptyNightSynthesis(dateKey);
+  // 0.3.1+ 兜底:旧数据里没有 dailyHighlight / dailySummary / lastFullReviewAt 三个字段
+  return {
+    ...found,
+    dailyHighlight: found.dailyHighlight ?? "",
+    dailySummary: found.dailySummary ?? "",
+    lastFullReviewAt: found.lastFullReviewAt ?? null,
+  };
 }
 
-function saveNightSynthesis(synthesis: NightSynthesis): void {
+/**
+ * 保存「晚上回顾」。
+ *
+ * @param synthesis  本次提交的字段(轻量回顾时只填 dailyHighlight / dailySummary / tomorrowBlocks)
+ * @param opts.isFullReview
+ *   - true:重启日 / 主动展开的完整 N1-N5 校准。会回写 visionProfile,推进 identity stage,
+ *     并把 lastFullReviewAt 标记为现在。
+ *   - false(默认):每天的轻量回顾。只更新轻量字段(dailyHighlight / dailySummary / tomorrowBlocks),
+ *     重的字段(N1-N4 + yearLens / monthLens)如果新值为空就保留旧值,绝不抹掉。
+ */
+function saveNightSynthesis(
+  synthesis: NightSynthesis,
+  opts: { isFullReview?: boolean } = {},
+): void {
+  const isFull = opts.isFullReview ?? false;
   if (!internalState.data.nightSynthesisByDate) {
     internalState.data.nightSynthesisByDate = {};
   }
-  internalState.data.nightSynthesisByDate[synthesis.dateKey] = {
+  const prev = internalState.data.nightSynthesisByDate[synthesis.dateKey];
+
+  // 轻量回顾时,N1-N4 + L1/L2 如果传进来是空字符串,沿用上次的值(不抹)
+  const merged: NightSynthesis = {
     ...synthesis,
+    stuckReason: isFull
+      ? synthesis.stuckReason
+      : synthesis.stuckReason || prev?.stuckReason || "",
+    enemyName: isFull
+      ? synthesis.enemyName
+      : synthesis.enemyName || prev?.enemyName || "",
+    antiVisionMantra: isFull
+      ? synthesis.antiVisionMantra
+      : synthesis.antiVisionMantra || prev?.antiVisionMantra || "",
+    visionMantra: isFull
+      ? synthesis.visionMantra
+      : synthesis.visionMantra || prev?.visionMantra || "",
+    yearLens: isFull ? synthesis.yearLens : synthesis.yearLens || prev?.yearLens || "",
+    monthLens: isFull ? synthesis.monthLens : synthesis.monthLens || prev?.monthLens || "",
+    lastFullReviewAt: isFull ? nowIso() : prev?.lastFullReviewAt ?? null,
     updatedAt: nowIso(),
   };
+  internalState.data.nightSynthesisByDate[synthesis.dateKey] = merged;
 
-  // N3/N4 回写,保持"洞见固化"
-  if (synthesis.antiVisionMantra.trim()) {
-    const cur = internalState.data.visionProfile.antiVisionText;
-    const mantra = `「${synthesis.antiVisionMantra.trim()}」`;
-    if (!cur.startsWith(mantra)) {
-      updateVisionProfile({
-        antiVisionText: cur ? `${mantra}\n\n${cur}` : mantra,
-      });
+  // 只有完整校准时才回写到 visionProfile / identity stage,避免每天的轻量回顾把方向冲掉
+  if (isFull) {
+    if (synthesis.antiVisionMantra.trim()) {
+      const cur = internalState.data.visionProfile.antiVisionText;
+      const mantra = `「${synthesis.antiVisionMantra.trim()}」`;
+      if (!cur.startsWith(mantra)) {
+        updateVisionProfile({
+          antiVisionText: cur ? `${mantra}\n\n${cur}` : mantra,
+        });
+      }
+    }
+    if (synthesis.visionMantra.trim()) {
+      const cur = internalState.data.visionProfile.visionText;
+      const mantra = `「${synthesis.visionMantra.trim()}」`;
+      if (!cur.startsWith(mantra)) {
+        updateVisionProfile({
+          visionText: cur ? `${mantra}\n\n${cur}` : mantra,
+        });
+      }
+    }
+    if (synthesis.yearLens.trim() && !internalState.data.visionProfile.yearGoal.trim()) {
+      updateVisionProfile({ yearGoal: synthesis.yearLens });
+    }
+    if (synthesis.monthLens.trim() && !internalState.data.visionProfile.monthProject.trim()) {
+      updateVisionProfile({ monthProject: synthesis.monthLens });
+    }
+
+    if (
+      synthesis.stuckReason.trim() &&
+      synthesis.enemyName.trim() &&
+      synthesis.visionMantra.trim() &&
+      synthesis.yearLens.trim() &&
+      internalState.data.identityProfile.stage !== "discovery"
+    ) {
+      internalState.data.identityProfile.stage = "discovery";
+      rebuildDailyPlanForToday();
     }
   }
-  if (synthesis.visionMantra.trim()) {
-    const cur = internalState.data.visionProfile.visionText;
-    const mantra = `「${synthesis.visionMantra.trim()}」`;
-    if (!cur.startsWith(mantra)) {
-      updateVisionProfile({
-        visionText: cur ? `${mantra}\n\n${cur}` : mantra,
-      });
-    }
-  }
-  if (synthesis.yearLens.trim() && !internalState.data.visionProfile.yearGoal.trim()) {
-    updateVisionProfile({ yearGoal: synthesis.yearLens });
-  }
-  if (synthesis.monthLens.trim() && !internalState.data.visionProfile.monthProject.trim()) {
-    updateVisionProfile({ monthProject: synthesis.monthLens });
-  }
 
-  if (
-    synthesis.stuckReason.trim() &&
-    synthesis.enemyName.trim() &&
-    synthesis.visionMantra.trim() &&
-    synthesis.yearLens.trim() &&
-    internalState.data.identityProfile.stage !== "discovery"
-  ) {
-    internalState.data.identityProfile.stage = "discovery";
-    rebuildDailyPlanForToday();
-  }
-
-  appendLog("synthesis-saved", "保存夜间综合");
+  appendLog(
+    "synthesis-saved",
+    isFull ? "完成完整 5 步校准" : "完成今晚轻量回顾",
+  );
   recalculateAlignment(synthesis.dateKey);
   persist();
 }

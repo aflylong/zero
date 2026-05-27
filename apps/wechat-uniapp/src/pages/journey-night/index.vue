@@ -1,156 +1,90 @@
 <template>
   <PageShell
-    title="晚上回顾"
+    title="今晚 3 件事"
     topbar-mode="secondary"
     back-url="/pages/today/index"
     :back-action="goBack"
   >
     <view class="journey-night">
       <GradientHeroCard card-class="journey-night__hero">
-        <SectionLabel>第 3 部分 · 综合洞见</SectionLabel>
+        <SectionLabel>今晚 3 件事</SectionLabel>
         <text class="journey-night__title">{{ description }}</text>
         <text class="body-text">
-          原文 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。顺序很重要。
-        </text>
-        <text class="muted-text">
-          保存时 N3 / N4 会自动写回到「道路」的反愿景与愿景顶部;N5.L3 的几个时间段会自动加进明天的「每日动作」。
+          一天结束了。花一两分钟把这三件事写下来,然后就可以收工了。
         </text>
       </GradientHeroCard>
 
-      <!-- N1 -->
+      <!-- ① 今天哪一刻最有感觉 -->
       <GlassCard card-class="journey-night__card">
-        <SectionLabel>N1 · 你卡住的真正原因</SectionLabel>
+        <SectionLabel>① 今天哪一刻最有感觉</SectionLabel>
         <text class="muted-text">
-          经过今天之后,让你最觉得「真实」的——你之所以一直卡住的原因是什么?
+          可能是最来劲的一刻,也可能是最不对劲的一刻。它通常会指出你真正在乎什么。
         </text>
         <textarea
           class="textarea-shell journey-night__textarea"
-          :value="form.stuckReason"
-          maxlength="500"
+          :value="form.dailyHighlight"
+          maxlength="240"
           auto-height
-          placeholder="不是借口,不是情境。是那个一直在场的真东西。"
-          @input="onText('stuckReason', $event)"
+          placeholder="一句话写下那个时刻就行,不用解释。"
+          @input="onText('dailyHighlight', $event)"
         />
       </GlassCard>
 
-      <!-- N2 -->
+      <!-- ② 明天 2-3 件小事 -->
       <GlassCard card-class="journey-night__card">
-        <SectionLabel>N2 · 看清是什么挡住了你</SectionLabel>
+        <SectionLabel>② 明天 2-3 件小事</SectionLabel>
         <text class="muted-text">
-          真正的敌人是什么?把它清楚命名。不是环境,不是别人,而是那个一直在掌控局面的内在模式或信念。
+          是「你正在成为的那个人」明天会理所当然去做的事。保存后会自动出现在明天的「每日动作」。
         </text>
-        <input
-          class="input-shell"
-          :value="form.enemyName"
-          maxlength="80"
-          placeholder="例如:害怕被评判 / 用「我太忙了」逃避真正重要的事"
-          @input="onText('enemyName', $event)"
-        />
-      </GlassCard>
-
-      <!-- N3 -->
-      <GlassCard card-class="journey-night__card">
-        <SectionLabel>N3 · 一句话压缩反愿景</SectionLabel>
-        <text class="muted-text">
-          写一句话,概括你拒绝让自己的人生变成什么样。读到它你应该会有感觉。
-        </text>
-        <input
-          class="input-shell"
-          :value="form.antiVisionMantra"
-          maxlength="80"
-          placeholder="例如:不要在 35 岁醒来,发现自己只过着别人替我设计的安全版本"
-          @input="onText('antiVisionMantra', $event)"
-        />
-      </GlassCard>
-
-      <!-- N4 -->
-      <GlassCard card-class="journey-night__card">
-        <SectionLabel>N4 · 一句话「想去到的样子(最小版)」</SectionLabel>
-        <text class="muted-text">
-          写一句话,概括你正在朝什么方向建造(并且你知道它会演化)。
-        </text>
-        <input
-          class="input-shell"
-          :value="form.visionMantra"
-          maxlength="80"
-          placeholder="例如:每天都把最重要的事完整做一次,然后把节奏写下来"
-          @input="onText('visionMantra', $event)"
-        />
-      </GlassCard>
-
-      <!-- N5 -->
-      <GlassCard card-class="journey-night__card">
-        <SectionLabel>N5 · 三维度</SectionLabel>
-        <text class="muted-text">
-          目标不是为了「成就」,目标是一种透镜。换上对的透镜,你就会看到该看到的信息。
-        </text>
-
-        <view class="field-block">
-          <text class="field-label">L1 · 一年方向</text>
-          <text class="muted-text">一年后必须有什么变成事实,你才会确信自己打破了旧模式?</text>
-          <input
-            class="input-shell"
-            :value="form.yearLens"
-            maxlength="80"
-            placeholder="例如:每周稳定写作 5 天,公开发布 50 篇"
-            @input="onText('yearLens', $event)"
-          />
-        </view>
-
-        <view class="field-block">
-          <text class="field-label">L2 · 这个月重点</text>
-          <text class="muted-text">一个月后必须有什么变成事实,才能让「一年方向」依然可能?</text>
-          <input
-            class="input-shell"
-            :value="form.monthLens"
-            maxlength="80"
-            placeholder="例如:跑通「研究 → 草稿 → 发布」的完整闭环 4 次"
-            @input="onText('monthLens', $event)"
-          />
-        </view>
-
-        <view class="field-block">
-          <text class="field-label">L3 · 今天的行动 · 明天 2-3 个时间段</text>
-          <text class="muted-text">
-            这些是「你正在成为的那个人」会理所当然去做的事。保存后会自动出现在明天的「每日动作」。
-          </text>
-          <view class="journey-night__blocks">
-            <view
-              v-for="(block, idx) in form.tomorrowBlocks"
-              :key="block.id"
-              class="journey-night__block"
-            >
-              <input
-                class="input-shell journey-night__block-title"
-                :value="block.title"
-                maxlength="60"
-                placeholder="例如:9:30-11:00 写作 90 分钟"
-                @input="onBlockChange(idx, 'title', $event)"
-              />
-              <input
-                class="input-shell journey-night__block-time"
-                :value="block.timeHint"
-                maxlength="20"
-                placeholder="时段(可选)"
-                @input="onBlockChange(idx, 'timeHint', $event)"
-              />
-              <button
-                class="ghost-button journey-night__block-del"
-                @tap="removeBlock(idx)"
-              >
-                ×
-              </button>
-            </view>
-
+        <view class="journey-night__blocks">
+          <view
+            v-for="(block, idx) in form.tomorrowBlocks"
+            :key="block.id"
+            class="journey-night__block"
+          >
+            <input
+              class="input-shell journey-night__block-title"
+              :value="block.title"
+              maxlength="60"
+              placeholder="例如:9:30-11:00 写作 90 分钟"
+              @input="onBlockChange(idx, 'title', $event)"
+            />
+            <input
+              class="input-shell journey-night__block-time"
+              :value="block.timeHint"
+              maxlength="20"
+              placeholder="时段(可选)"
+              @input="onBlockChange(idx, 'timeHint', $event)"
+            />
             <button
-              v-if="form.tomorrowBlocks.length < 5"
-              class="ghost-button"
-              @tap="addBlock"
+              class="ghost-button journey-night__block-del"
+              @tap="removeBlock(idx)"
             >
-              + 添加时间段
+              ×
             </button>
           </view>
+
+          <button
+            v-if="form.tomorrowBlocks.length < 5"
+            class="ghost-button"
+            @tap="addBlock"
+          >
+            + 添加时间段
+          </button>
         </view>
+      </GlassCard>
+
+      <!-- ③ 一句话总结今天(可选) -->
+      <GlassCard card-class="journey-night__card">
+        <SectionLabel>③ 一句话总结今天(可选)</SectionLabel>
+        <text class="muted-text">不写也行。写下来是给未来的自己看的。</text>
+        <input
+          class="input-shell"
+          :value="form.dailySummary"
+          maxlength="120"
+          placeholder="例如:今天没有偷工减料"
+          @input="onText('dailySummary', $event)"
+        />
       </GlassCard>
 
       <text
@@ -159,6 +93,108 @@
       >
         {{ dirty ? "有未保存修改" : "已同步" }}
       </text>
+
+      <!-- 折叠区:想重新校准方向?(N1-N5 完整版) -->
+      <GlassCard card-class="journey-night__card">
+        <button class="journey-night__toggle" @tap="fullExpanded = !fullExpanded">
+          <text class="journey-night__toggle-title">
+            {{ fullExpanded ? "完整校准方向" : "想重新校准方向?" }}
+          </text>
+          <text class="journey-night__toggle-hint">
+            {{ fullExpanded ? "收起" : lastFullReviewLabel }}
+          </text>
+        </button>
+        <text v-if="!fullExpanded" class="muted-text">
+          原文 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。
+          方向类的回答一周内不会变,所以默认收起;有空时再展开做一次完整校准。
+        </text>
+      </GlassCard>
+
+      <template v-if="fullExpanded">
+        <GradientHeroCard card-class="journey-night__hero">
+          <SectionLabel>完整 5 步校准</SectionLabel>
+          <text class="body-text">
+            把今天的洞见说清楚、内化进自我。原文 5 步顺序很重要——
+            先说"为什么卡住",再"看清是什么挡住了你",然后压缩成两句话,最后定下三个维度。
+          </text>
+        </GradientHeroCard>
+
+        <GlassCard card-class="journey-night__card">
+          <SectionLabel>N1 · 你卡住的真正原因</SectionLabel>
+          <textarea
+            class="textarea-shell journey-night__textarea"
+            :value="form.stuckReason"
+            maxlength="500"
+            auto-height
+            placeholder="不是借口,不是情境。是那个一直在场的真东西。"
+            @input="onText('stuckReason', $event)"
+          />
+        </GlassCard>
+
+        <GlassCard card-class="journey-night__card">
+          <SectionLabel>N2 · 看清是什么挡住了你</SectionLabel>
+          <text class="muted-text">
+            不是环境,不是别人,而是那个一直在掌控局面的内在模式或信念。
+          </text>
+          <input
+            class="input-shell"
+            :value="form.enemyName"
+            maxlength="80"
+            placeholder="例如:害怕被评判 / 用「我太忙了」逃避真正重要的事"
+            @input="onText('enemyName', $event)"
+          />
+        </GlassCard>
+
+        <GlassCard card-class="journey-night__card">
+          <SectionLabel>N3 · 一句话不想回去的样子</SectionLabel>
+          <input
+            class="input-shell"
+            :value="form.antiVisionMantra"
+            maxlength="80"
+            placeholder="例如:不要在 35 岁醒来,发现自己只过着别人替我设计的安全版本"
+            @input="onText('antiVisionMantra', $event)"
+          />
+        </GlassCard>
+
+        <GlassCard card-class="journey-night__card">
+          <SectionLabel>N4 · 一句话想去到的样子(最小版)</SectionLabel>
+          <input
+            class="input-shell"
+            :value="form.visionMantra"
+            maxlength="80"
+            placeholder="例如:每天都把最重要的事完整做一次,然后把节奏写下来"
+            @input="onText('visionMantra', $event)"
+          />
+        </GlassCard>
+
+        <GlassCard card-class="journey-night__card">
+          <SectionLabel>N5 · 三维度</SectionLabel>
+          <view class="field-block">
+            <text class="field-label">L1 · 一年方向</text>
+            <input
+              class="input-shell"
+              :value="form.yearLens"
+              maxlength="80"
+              placeholder="例如:每周稳定写作 5 天,公开发布 50 篇"
+              @input="onText('yearLens', $event)"
+            />
+          </view>
+          <view class="field-block">
+            <text class="field-label">L2 · 这个月重点</text>
+            <input
+              class="input-shell"
+              :value="form.monthLens"
+              maxlength="80"
+              placeholder="例如:跑通「研究 → 草稿 → 发布」的完整闭环 4 次"
+              @input="onText('monthLens', $event)"
+            />
+          </view>
+        </GlassCard>
+
+        <button class="pill-button journey-night__full-save" @tap="saveFullReview">
+          保存这次完整校准
+        </button>
+      </template>
     </view>
 
     <template #footer>
@@ -167,7 +203,7 @@
           返回今日
         </button>
         <button class="pill-button journey-night__footer-btn" :disabled="!dirty" @tap="save">
-          保存综合
+          保存
         </button>
       </view>
     </template>
@@ -194,7 +230,10 @@ const dateKey = computed(() => store.state.activeDateKey);
 interface FormBlock extends TomorrowBlock {}
 
 const dirty = ref(false);
+const fullExpanded = ref(false);
 const form = reactive<{
+  dailyHighlight: string;
+  dailySummary: string;
   stuckReason: string;
   enemyName: string;
   antiVisionMantra: string;
@@ -203,6 +242,8 @@ const form = reactive<{
   monthLens: string;
   tomorrowBlocks: FormBlock[];
 }>({
+  dailyHighlight: "",
+  dailySummary: "",
   stuckReason: "",
   enemyName: "",
   antiVisionMantra: "",
@@ -218,6 +259,8 @@ function newBlockId(): string {
 
 function hydrate() {
   const ns = store.getNightSynthesis(dateKey.value);
+  form.dailyHighlight = ns.dailyHighlight ?? "";
+  form.dailySummary = ns.dailySummary ?? "";
   form.stuckReason = ns.stuckReason;
   form.enemyName = ns.enemyName;
   form.antiVisionMantra = ns.antiVisionMantra;
@@ -231,17 +274,43 @@ function hydrate() {
         { id: newBlockId(), title: "", timeHint: "", promotedToProofRule: false },
       ];
   dirty.value = false;
+
+  // 重启日(刚跑完 22 题)且从未完整校准过 → 自动展开
+  const journeyCompletedAt = store.state.data.morningExcavation.completedAt ?? null;
+  const lastFull = ns.lastFullReviewAt;
+  const justFinishedJourneyToday =
+    journeyCompletedAt && journeyCompletedAt.slice(0, 10) === dateKey.value;
+  fullExpanded.value = Boolean(!lastFull && justFinishedJourneyToday);
 }
 
 watch(dateKey, hydrate, { immediate: true });
 
 const description = computed(() => {
   const d = parseDateKey(dateKey.value);
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 5 步综合`;
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 1 分钟写完`;
+});
+
+const lastFullReviewLabel = computed(() => {
+  const ns = store.getNightSynthesis(dateKey.value);
+  if (!ns.lastFullReviewAt) return "你还没做过完整校准";
+  const d = new Date(ns.lastFullReviewAt);
+  const days = Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000));
+  if (days <= 0) return "今天刚做过完整校准";
+  if (days < 7) return `上次校准:${days} 天前`;
+  if (days < 30) return `上次校准:${Math.floor(days / 7)} 周前`;
+  return `上次校准:${Math.floor(days / 30)} 个月前`;
 });
 
 function onText(
-  field: "stuckReason" | "enemyName" | "antiVisionMantra" | "visionMantra" | "yearLens" | "monthLens",
+  field:
+    | "dailyHighlight"
+    | "dailySummary"
+    | "stuckReason"
+    | "enemyName"
+    | "antiVisionMantra"
+    | "visionMantra"
+    | "yearLens"
+    | "monthLens",
   e: UniValueEvent,
 ) {
   form[field] = String(e.detail?.value ?? "");
@@ -271,6 +340,7 @@ function removeBlock(idx: number) {
 }
 
 function buildSynthesis(): NightSynthesis {
+  const prev = store.getNightSynthesis(dateKey.value);
   return {
     dateKey: dateKey.value,
     stuckReason: form.stuckReason,
@@ -287,21 +357,33 @@ function buildSynthesis(): NightSynthesis {
         timeHint: b.timeHint,
         promotedToProofRule: b.promotedToProofRule,
       })),
+    dailyHighlight: form.dailyHighlight,
+    dailySummary: form.dailySummary,
+    lastFullReviewAt: prev.lastFullReviewAt ?? null,
     updatedAt: new Date().toISOString(),
   };
 }
 
 function save() {
-  store.saveNightSynthesis(buildSynthesis());
+  store.saveNightSynthesis(buildSynthesis(), { isFullReview: false });
   store.promoteTomorrowBlocks(dateKey.value);
   dirty.value = false;
-  uni.showToast({ title: "综合已保存", icon: "success" });
+  uni.showToast({ title: "已保存", icon: "success" });
+  setTimeout(() => goBack(), 240);
+}
+
+function saveFullReview() {
+  store.saveNightSynthesis(buildSynthesis(), { isFullReview: true });
+  store.promoteTomorrowBlocks(dateKey.value);
+  dirty.value = false;
+  fullExpanded.value = false;
+  uni.showToast({ title: "完整校准已保存", icon: "success" });
   setTimeout(() => goBack(), 240);
 }
 
 function goBack() {
   if (dirty.value) {
-    store.saveNightSynthesis(buildSynthesis());
+    store.saveNightSynthesis(buildSynthesis(), { isFullReview: false });
   }
   if (getCurrentPages().length > 1) {
     uni.navigateBack();
@@ -316,7 +398,7 @@ onShow(() => {
 
 onBeforeUnmount(() => {
   if (dirty.value) {
-    store.saveNightSynthesis(buildSynthesis());
+    store.saveNightSynthesis(buildSynthesis(), { isFullReview: false });
   }
 });
 </script>
@@ -372,6 +454,30 @@ onBeforeUnmount(() => {
 }
 .journey-night__dirty--on {
   color: #fb923c;
+}
+
+.journey-night__toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6rpx;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.journey-night__toggle-title {
+  color: #f5f5f5;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.journey-night__toggle-hint {
+  color: #71717a;
+  font-size: 22rpx;
+}
+
+.journey-night__full-save {
+  align-self: flex-start;
 }
 
 .journey-night__footer {
