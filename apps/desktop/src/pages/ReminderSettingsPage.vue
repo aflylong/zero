@@ -3,14 +3,18 @@
     <PageHeader
       title="提醒设置"
       kicker="REMINDERS"
-      description="按原文 9 时间点 + 早晨/夜间锚点管理。关掉的提醒不会推送通知。"
+      description="日常提醒跟目标推进走;原文 9 题只在重启日当天按时间段触发。"
       back
       back-to="/today"
     >
       <template #actions>
         <button type="button" class="btn btn-ghost btn-sm" @click="seedDefaults">
           <RefreshCw :size="14" :stroke-width="iconStroke" />
-          <span>恢复默认 9 时间点</span>
+          <span>恢复日常锚点</span>
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" @click="seedRestartToday">
+          <BellRing :size="14" :stroke-width="iconStroke" />
+          <span>开启今日重启提醒</span>
         </button>
         <button type="button" class="btn btn-edit btn-sm" @click="addCustom">
           <Plus :size="14" :stroke-width="iconStroke" />
@@ -75,6 +79,9 @@
                   />
                   <p v-if="rule.promptKey" class="faint-text reminder-card__prompt-key">
                     题目锚点:{{ rule.promptKey }}
+                  </p>
+                  <p v-if="rule.scheduledDateKey" class="faint-text reminder-card__prompt-key">
+                    只在 {{ rule.scheduledDateKey }} 生效
                   </p>
                 </div>
                 <div class="reminder-card__actions">
@@ -184,16 +191,16 @@ const groupedRules = computed<Group[]>(() => {
     },
     day: {
       title: "白天 6 个时间点",
-      description: "对应原文 D1-D6。把你从惯性里拽出来,响起时记得当场作答。",
+      description: "日常只保留目标偏航检查。完整 D1-D6 会在重启日当天按时间段一次性触发。",
     },
     commute: {
       title: "通勤 3 题",
       description:
-        "原文 W1-W3,通勤、散步、发呆时想这三条。默认时间:早 6:50 / 中午 12:30 / 晚 19:00,可调。",
+        "原文 W1-W3 属于重启日高压题。开启今日重启提醒后,它们会在当天通勤/散步时段触发。",
     },
     night: {
       title: "晚上回顾入口",
-      description: "原文 Part 3 入口提醒。响起时进入 5 步回顾。",
+      description: "日常进入「今晚 3 件事」。重启日或主动校准时再展开完整 5 步。",
     },
   };
 
@@ -259,34 +266,24 @@ function addCustom() {
   });
 }
 
+function seedRestartToday() {
+  store.seedRestartDayReminders(store.state.activeDateKey);
+}
+
 function seedDefaults() {
-  // 不删旧的,只补全缺失的 promptKey
+  // 不删旧的,只补全日常锚点。原文 9 题改为重启日一次性提醒。
+  const restartPromptKeys = new Set(dayPrompts.map((prompt) => prompt.key));
+  for (const rule of reminderRules.value) {
+    if (rule.promptKey && restartPromptKeys.has(rule.promptKey) && !rule.scheduledDateKey) {
+      store.updateReminderRule(rule.id, { enabled: false });
+    }
+  }
+
   const have = new Set(
     reminderRules.value
       .map((r) => r.promptKey)
       .filter((k): k is string => Boolean(k)),
   );
-  for (const dp of dayPrompts) {
-    if (have.has(dp.key)) continue;
-    // commute 默认时间:W1 早 6:50、W2 中午 12:30、W3 晚 19:00
-    const commuteDefaults: Record<string, [number, number]> = {
-      "w1-commute": [6, 50],
-      "w2-commute": [12, 30],
-      "w3-commute": [19, 0],
-    };
-    const [h, m] =
-      dp.kind === "commute"
-        ? commuteDefaults[dp.key] ?? [7, 0]
-        : [dp.hour ?? 0, dp.minute ?? 0];
-    store.createReminderRule({
-      kind: dp.kind === "day" ? "day" : "commute",
-      promptKey: dp.key,
-      label: dp.label,
-      hour: h,
-      minute: m,
-      message: dp.question,
-    });
-  }
   if (!have.has("morning-excavation")) {
     store.createReminderRule({
       kind: "morning",
@@ -297,25 +294,24 @@ function seedDefaults() {
       message: "如果今天什么都不变,我能接受吗?",
     });
   }
+  if (!have.has("daily-course-check")) {
+    store.createReminderRule({
+      kind: "day",
+      promptKey: "daily-course-check",
+      label: "目标偏航检查",
+      hour: 15,
+      minute: 15,
+      message: "你今天最重要的事推进了吗?如果没有,今晚你准备拿什么借口安慰自己?",
+    });
+  }
   if (!have.has("night-synthesis")) {
     store.createReminderRule({
       kind: "night",
       promptKey: "night-synthesis",
-      label: "晚上回顾",
+      label: "晚上证据审查",
       hour: 21,
       minute: 30,
-      message: "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
-    });
-  }
-  if (!have.has("weekly-recalibrate")) {
-    store.createReminderRule({
-      kind: "night",
-      promptKey: "weekly-recalibrate",
-      label: "本周校准方向",
-      hour: 21,
-      minute: 0,
-      daysOfWeek: [0],
-      message: "周日晚上 5 分钟:把这一周的状态对一下方向。展开「想重新校准方向?」就行。",
+      message: "今天留下的证据,配得上你说的目标吗?写下今晚 3 件事。",
     });
   }
 }

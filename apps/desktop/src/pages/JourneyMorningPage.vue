@@ -24,7 +24,7 @@
             原文要求留出 15-30 分钟,严格不外包给 AI。这是把"挖痛"压成"反愿景"、再把反愿景对准方向的过程。
           </p>
           <p class="muted-text">
-            一题一题来,答不上来就跳过,晚点再回来。所有答案都自动保存。
+            一题一题来,答不上来就跳过,晚点再回来。进入这里会为今天种下重启日提醒,只在今天按时间段触发。
           </p>
           <div class="journey-morning__stages">
             <div
@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   AlertTriangle,
@@ -165,6 +165,10 @@ import SectionLabel from "@/components/common/SectionLabel.vue";
 const iconStroke = tokens.iconStrokeWidth;
 const router = useRouter();
 const store = useAppStore();
+
+onMounted(() => {
+  store.seedRestartDayReminders(store.state.activeDateKey);
+});
 
 const questions = excavationQuestions;
 const totalQuestions = questions.length;

@@ -606,7 +606,7 @@ const reminderStatusTitle = computed(() => {
 const reminderStatusBody = computed(() => {
   if (primaryPrompt.value)
     return `先处理「${primaryPrompt.value.label}」,剩下的会排着队来。`;
-  return "白天 6 + 通勤 3,可以在「提醒设置」里调整或关闭。";
+  return "日常只保留目标锚点;完整 9 题会在重启日当天按时间段提醒。";
 });
 
 const streakCopy = computed(() => {

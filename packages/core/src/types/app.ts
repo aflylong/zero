@@ -198,6 +198,8 @@ export interface ProofRule {
   fromTomorrowBlockId?: string;
   /** 创建时间(ISO) */
   createdAt?: string;
+  /** 从哪一天开始生效。空值代表历史规则,默认一直生效。 */
+  startDateKey?: string;
 }
 
 export interface ReminderRule {
@@ -214,6 +216,10 @@ export interface ReminderRule {
   enabled: boolean;
   /** 0.3.1+ 周几触发;空 = 每天触发。0=周日,1=周一,..., 6=周六 */
   daysOfWeek?: number[];
+  /** 只在某一天触发。用于“重启日”这种一次性高强度提醒。 */
+  scheduledDateKey?: string;
+  /** 到点后多少分钟内有效。过期后不再挡住当前提醒;空 = 一直有效直到处理。 */
+  expiresAfterMinutes?: number;
   deliveryMode: DeliveryMode;
   subscriptionStatus: SubscriptionStatus;
   /** 旁白文案;promptKey 的题干优先 */

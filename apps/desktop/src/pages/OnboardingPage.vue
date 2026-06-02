@@ -129,7 +129,7 @@
           <SectionLabel :icon="Rocket">今天就启动</SectionLabel>
           <p class="muted-text">
             写一条今天就能完成的真实动作。
-            原文 9 条白天提醒(D1-D6 + W1-W3)会自动种好,你也可以稍后改时间。
+            日常会保留目标偏航检查和晚上证据审查;原文 9 题只在你开启重启日时按时间段触发。
           </p>
           <div class="form-field">
             <label class="form-label">今天先做什么</label>
@@ -171,7 +171,7 @@
             </div>
           </div>
           <p class="faint-text">
-            白天 6 个时间点和 3 个通勤反思会种好默认推送时间。可以在「提醒设置」页里随时调整或关闭。
+            想跑完整重启日时,进入「早晨开掘」或在「提醒设置」里开启今日重启提醒。
           </p>
         </GlassCard>
 
@@ -214,7 +214,6 @@ import {
   Target,
 } from "lucide-vue-next";
 import {
-  dayPrompts,
   tokens,
   useAppStore,
   type ReminderRule,
@@ -235,7 +234,7 @@ const steps = [
   { short: "方向", kicker: "STEP 1 · 方向", title: "先把方向定住:你要去哪,你不要回到哪。", description: "这一步只定方向。" },
   { short: "身份", kicker: "STEP 2 · 身份", title: "用一句话决定你今天起按什么身份行动。", description: "身份句拉齐行为,反身份阻止你退回旧版本。" },
   { short: "目标", kicker: "STEP 3 · 目标层级", title: "把一年方向和这个月要拿下的事说清楚。", description: "一年定方向,一月定具体里程碑。" },
-  { short: "启动", kicker: "STEP 4 · 启动", title: "设一条今天的动作和提醒时间。", description: "9 条白天提醒会自动种好。" },
+  { short: "启动", kicker: "STEP 4 · 启动", title: "设一条今天的动作和提醒时间。", description: "日常提醒先跟目标推进走。" },
 ] as const;
 
 const visionText = computed({
@@ -353,44 +352,22 @@ function buildAllReminders(): ReminderRule[] {
       "morning-excavation",
     ),
     buildReminder(
+      "day",
+      15,
+      15,
+      "目标偏航检查",
+      "你今天最重要的事推进了吗?如果没有,今晚你准备拿什么借口安慰自己?",
+      "daily-course-check",
+    ),
+    buildReminder(
       "night",
       nh,
       nm,
-      "晚上回顾",
-      "晚上 5 步:卡点 / 看清是什么挡住了你 / 不想回去的样子 / 想去到的样子 / 三维度。",
+      "晚上证据审查",
+      "今天留下的证据,配得上你说的目标吗?写下今晚 3 件事。",
       "night-synthesis",
     ),
-    // 周日多推一条「重新校准方向」(完整 5 步,1 周一次)
-    buildReminder(
-      "night",
-      21,
-      0,
-      "本周校准方向",
-      "周日晚上 5 分钟:把这一周的状态对一下方向。展开「想重新校准方向?」就行。",
-      "weekly-recalibrate",
-      [0],
-    ),
   ];
-
-  for (const dp of dayPrompts) {
-    if (dp.kind === "day" && dp.hour !== undefined && dp.minute !== undefined) {
-      reminders.push(
-        buildReminder("day", dp.hour, dp.minute, dp.label, dp.question, dp.key),
-      );
-    } else if (dp.kind === "commute") {
-      // 通勤题默认时间:W1 早 6:50(出门前)、W2 中午 12:30(午休)、W3 晚 19:00(下班路上)
-      // 用户可以在「提醒设置」里调整或关闭。
-      const defaults: Record<string, [number, number]> = {
-        "w1-commute": [6, 50],
-        "w2-commute": [12, 30],
-        "w3-commute": [19, 0],
-      };
-      const [h, m] = defaults[dp.key] ?? [7, 0];
-      reminders.push(
-        buildReminder("commute", h, m, dp.label, dp.question, dp.key),
-      );
-    }
-  }
 
   return reminders;
 }

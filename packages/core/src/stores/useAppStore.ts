@@ -1,6 +1,6 @@
 import { computed, reactive, readonly } from "vue";
 import { articleSections } from "../content/article";
-import { findDayPrompt } from "../content/dayPrompts";
+import { dayPrompts, findDayPrompt } from "../content/dayPrompts";
 import {
   buildDateTime,
   clamp,
@@ -80,6 +80,12 @@ const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   soundVolume: 70,
   focusWindow: true,
   inAppBanner: true,
+};
+
+const COMMUTE_DEFAULTS: Record<string, [number, number]> = {
+  "w1-commute": [6, 50],
+  "w2-commute": [12, 30],
+  "w3-commute": [19, 0],
 };
 
 function createEmptyNightSynthesis(dateKey: string): NightSynthesis {
@@ -417,8 +423,13 @@ function buildRecordDay(dateKey: string): RecordDay {
   };
 }
 
-function activeProofRules(): ProofRule[] {
-  return sortRules(internalState.data.proofRules.filter((rule) => rule.active));
+function activeProofRules(dateKey: string = internalState.activeDateKey): ProofRule[] {
+  return sortRules(
+    internalState.data.proofRules.filter((rule) => (
+      rule.active &&
+      (!rule.startDateKey || rule.startDateKey <= dateKey)
+    )),
+  );
 }
 
 function getReminderAction(ruleId: string, dateKey: string = internalState.activeDateKey) {
@@ -436,7 +447,7 @@ function getReminderAction(ruleId: string, dateKey: string = internalState.activ
  */
 function autoAlignment(dateKey: string = internalState.activeDateKey): number {
   const snapshot = ensureDay(dateKey).snapshot;
-  const proofs = activeProofRules();
+  const proofs = activeProofRules(dateKey);
   const proofRatio = proofs.length
     ? snapshot.completedProofRuleIds.length / proofs.length
     : 1;
@@ -451,7 +462,14 @@ function autoAlignment(dateKey: string = internalState.activeDateKey): number {
   const synthesis = internalState.data.nightSynthesisByDate?.[dateKey];
   const synthesisBonus =
     synthesis &&
-    (synthesis.stuckReason || synthesis.enemyName || synthesis.visionMantra)
+    (
+      synthesis.dailyHighlight ||
+      synthesis.dailySummary ||
+      synthesis.tomorrowBlocks?.some((block) => block.title.trim()) ||
+      synthesis.stuckReason ||
+      synthesis.enemyName ||
+      synthesis.visionMantra
+    )
       ? 0.1
       : 0;
   return clamp(
@@ -472,12 +490,28 @@ function refreshReminderPrompts(now: Date = new Date()): void {
   internalState.activeDateKey = dateKey;
   ensureDay(dateKey);
 
+  const scheduledPromptKeysForToday = new Set(
+    internalState.data.reminderRules
+      .filter((rule) => rule.enabled && rule.scheduledDateKey === dateKey && rule.promptKey)
+      .map((rule) => rule.promptKey as string),
+  );
+
   internalState.pendingReminderPrompts = internalState.data.reminderRules
     .filter((rule) => rule.enabled)
     .filter((rule) => {
       const action = getReminderAction(rule.id, dateKey);
       if (action && action.action !== "snooze") return false;
       if (rule.snoozedUntil && new Date(rule.snoozedUntil).getTime() > now.getTime()) {
+        return false;
+      }
+      if (rule.scheduledDateKey && rule.scheduledDateKey !== dateKey) {
+        return false;
+      }
+      if (
+        !rule.scheduledDateKey &&
+        rule.promptKey &&
+        scheduledPromptKeysForToday.has(rule.promptKey)
+      ) {
         return false;
       }
       // 所有 reminder 都按 hour/minute 触发(包括 commute);
@@ -487,7 +521,15 @@ function refreshReminderPrompts(now: Date = new Date()): void {
         if (!rule.daysOfWeek.includes(now.getDay())) return false;
       }
       const dueTime = buildDateTime(dateKey, rule.hour, rule.minute);
+      if (rule.expiresAfterMinutes && now.getTime() > dueTime.getTime() + rule.expiresAfterMinutes * 60 * 1000) {
+        return false;
+      }
       return now.getTime() >= dueTime.getTime();
+    })
+    .sort((left, right) => {
+      const leftDue = buildDateTime(dateKey, left.hour, left.minute).getTime();
+      const rightDue = buildDateTime(dateKey, right.hour, right.minute).getTime();
+      return leftDue - rightDue;
     })
     .map((rule) => {
       const dp = rule.promptKey ? findDayPrompt(rule.promptKey) : null;
@@ -716,6 +758,8 @@ function createReminderRule(seed: Partial<ReminderRule>): ReminderRule {
     minute: seed.minute ?? 0,
     enabled: seed.enabled ?? true,
     daysOfWeek: seed.daysOfWeek,
+    scheduledDateKey: seed.scheduledDateKey,
+    expiresAfterMinutes: seed.expiresAfterMinutes,
     deliveryMode: seed.deliveryMode ?? "system-notification",
     subscriptionStatus: seed.subscriptionStatus ?? "accepted",
     message: seed.message ?? "",
@@ -725,6 +769,63 @@ function createReminderRule(seed: Partial<ReminderRule>): ReminderRule {
   refreshReminderPrompts();
   persist();
   return rule;
+}
+
+function seedRestartDayReminders(dateKey: string = internalState.activeDateKey): number {
+  const seeds: ReminderRule[] = [];
+
+  for (const dp of dayPrompts) {
+    const [hour, minute] =
+      dp.kind === "commute"
+        ? COMMUTE_DEFAULTS[dp.key] ?? [7, 0]
+        : [dp.hour ?? 11, dp.minute ?? 0];
+    seeds.push({
+      id: `restart-${dateKey}-${dp.key}`,
+      kind: dp.kind === "commute" ? "commute" : "day",
+      promptKey: dp.key,
+      label: `重启日 · ${dp.label}`,
+      hour,
+      minute,
+      enabled: true,
+      scheduledDateKey: dateKey,
+      expiresAfterMinutes: dp.kind === "commute" ? 240 : 150,
+      deliveryMode: "system-notification",
+      subscriptionStatus: "accepted",
+      message: dp.question,
+      snoozedUntil: null,
+    });
+  }
+
+  seeds.push({
+    id: `restart-${dateKey}-night-synthesis`,
+    kind: "night",
+    promptKey: "night-synthesis",
+    label: "重启日 · 晚上综合",
+    hour: 21,
+    minute: 30,
+    enabled: true,
+    scheduledDateKey: dateKey,
+    expiresAfterMinutes: 180,
+    deliveryMode: "system-notification",
+    subscriptionStatus: "accepted",
+    message: "今天留下的证据,配得上你说的目标吗?把洞见压成明天的行动。",
+    snoozedUntil: null,
+  });
+
+  let changed = 0;
+  for (const seed of seeds) {
+    const index = internalState.data.reminderRules.findIndex((rule) => rule.id === seed.id);
+    if (index >= 0) {
+      internalState.data.reminderRules.splice(index, 1, seed);
+    } else {
+      internalState.data.reminderRules.push(seed);
+    }
+    changed += 1;
+  }
+
+  refreshReminderPrompts();
+  persist();
+  return changed;
 }
 
 function removeReminderRule(ruleId: string): void {
@@ -991,6 +1092,7 @@ function saveNightSynthesis(
 function promoteTomorrowBlocks(dateKey: string = internalState.activeDateKey): number {
   const synthesis = internalState.data.nightSynthesisByDate?.[dateKey];
   if (!synthesis) return 0;
+  const startDateKey = shiftDateKey(dateKey, 1);
   let promoted = 0;
   let order = Math.max(0, ...internalState.data.proofRules.map((r) => r.sortOrder));
   const updatedBlocks: TomorrowBlock[] = synthesis.tomorrowBlocks.map((block) => {
@@ -1005,6 +1107,7 @@ function promoteTomorrowBlocks(dateKey: string = internalState.activeDateKey): n
       sortOrder: order,
       fromTomorrowBlockId: block.id,
       createdAt: nowIso(),
+      startDateKey,
     });
     promoted += 1;
     return { ...block, promotedToProofRule: true };
@@ -1148,7 +1251,7 @@ function getRecordDetail(dateKey: string): RecordDetail {
     weekday: formatWeekday(dateKey),
     alignmentScore: snapshot?.alignmentScore ?? null,
     completedProofCount: completedIds.length,
-    totalProofCount: activeProofRules().length,
+    totalProofCount: activeProofRules(dateKey).length,
     todayNote: snapshot?.todayNote ?? "",
     hasNightReview: Boolean(synthesis),
     reminderActions,
@@ -1297,6 +1400,7 @@ export function useAppStore() {
     updateTodayNote,
     updateReminderRule,
     createReminderRule,
+    seedRestartDayReminders,
     removeReminderRule,
     resolveReminder,
     answerDayPrompt,

@@ -26,7 +26,7 @@
         <GlassCard variant="hero">
           <SectionLabel :icon="Moon">今晚 3 件事</SectionLabel>
           <p class="body-text">
-            一天结束了。花一两分钟把这三件事写下来,然后就可以收工了。
+            一天结束了。别只说自己想改变,留下证据:今天哪一刻最真实,明天哪几件事能证明你还在推进。
           </p>
         </GlassCard>
 
@@ -40,7 +40,7 @@
             v-model="form.dailyHighlight"
             class="form-textarea"
             maxlength="240"
-            placeholder="一句话写下那个时刻就行,不用解释。"
+            placeholder="一句话写下那个时刻。它是证据,不是安慰。"
             @input="dirty = true"
           />
         </GlassCard>
@@ -49,7 +49,7 @@
         <GlassCard>
           <SectionLabel :icon="ListChecks">② 明天 2-3 件小事</SectionLabel>
           <p class="muted-text">
-            是「你正在成为的那个人」明天会理所当然去做的事。保存后会自动出现在明天的「每日动作」。
+            是「你正在成为的那个人」明天会理所当然去做的事。保存后会从明天开始出现在「每日动作」。
           </p>
 
           <div class="journey-night__blocks">
